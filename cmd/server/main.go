@@ -1,3 +1,7 @@
 package main
 
-func main() {}
+func main() {
+	if err := run(); err != nil {
+		panic(err)
+	}
+}
