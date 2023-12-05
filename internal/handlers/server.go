@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+func Default(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+}
+
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
 	// 1. Принимать метрики по протоколу HTTP методом `POST`.
 	if r.Method != http.MethodPost {
@@ -17,7 +21,7 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 	//  2. Парсим маршрут и получаем мапку: тип, метрика, значение
 	metric, err := parseURL(r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -51,7 +55,7 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 	default:
 		// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
 		// Пример: /update/counter/allocCount/text
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 }
