@@ -7,10 +7,17 @@ import (
 	"strings"
 )
 
+var (
+	// ErrUrlIsInvalid возвращает ошибку, если ссылка некорректная.
+	ErrUrlIsInvalid = errors.New("URL is invalid")
+)
+
+// Default задет дефолтный маршрут
 func Default(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
+// PostMetrics обрабатывае входящие метрики
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
 	// 1. Принимать метрики по протоколу HTTP методом `POST`.
 	if r.Method != http.MethodPost {
@@ -60,6 +67,7 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// parseURL парсит маршруты входящих запросов
 func parseURL(r *http.Request) (map[string]string, error) {
 	// Реализовать парсинг маршрутов
 	// Пример: /update/gauge/speedAverage/200 - len = 5
@@ -70,7 +78,7 @@ func parseURL(r *http.Request) (map[string]string, error) {
 	slice := strings.Split(r.URL.String(), "/")
 	// 3. Проверяем корректность маршрута
 	if len(slice) < 5 {
-		return metric, errors.New("Wrong URL")
+		return metric, ErrUrlIsInvalid
 	}
 
 	metric["type"] = slice[2]
@@ -80,6 +88,7 @@ func parseURL(r *http.Request) (map[string]string, error) {
 	return metric, nil
 }
 
+// typeMetric проверяет типа метрики из запросов
 func typeMetric(s string) interface{} {
 	i, err := strconv.ParseInt(s, 10, 64)
 	if err == nil {

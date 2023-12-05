@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// middleware посредник для обработки входящих звпросов
 func middleware(next http.Handler) http.Handler {
 	// получаем Handler приведением типа http.HandlerFunc
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +18,7 @@ func middleware(next http.Handler) http.Handler {
 	})
 }
 
-// Задаем маршруты для всего сервиса
+// routes задаем маршруты для всего сервиса
 func routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(`/`, handlers.Default)
@@ -26,6 +27,7 @@ func routes() http.Handler {
 	return mux
 }
 
+// deduplicate убираем дубли слешей из адреса входящего запроса
 func deduplicate(str string, cut string) string {
 	var newStr strings.Builder
 	var old rune
