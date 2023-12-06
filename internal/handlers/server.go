@@ -13,12 +13,12 @@ var (
 )
 
 // Default задет дефолтный маршрут
-func Default(w http.ResponseWriter, _ *http.Request) {
+func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
 // PostMetrics обрабатывае входящие метрики
-func PostMetrics(w http.ResponseWriter, r *http.Request) {
+func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	// 1. Принимать метрики по протоколу HTTP методом `POST`.
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -48,8 +48,11 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		// TODO: 5. Запись значение метрики counter
-		//log.Println(v)
+		// Запись значения метрики Counter
+		err := m.Store.Update(metric)
+		if err != nil {
+			return
+		}
 	case float64:
 		// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
 		// Пример: /update/counter/allocCount/20.0003
@@ -57,8 +60,11 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		// TODO: 6. Запись значения метрики gauge
-		//log.Println("float64", v)
+		// Запись значения метрики gauge
+		err := m.Store.Update(metric)
+		if err != nil {
+			return
+		}
 	default:
 		// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
 		// Пример: /update/counter/allocCount/text

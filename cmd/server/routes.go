@@ -21,8 +21,8 @@ func middleware(next http.Handler) http.Handler {
 // routes задаем маршруты для всего сервиса
 func routes() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, handlers.Default)
-	mux.HandleFunc(`/update/`, handlers.PostMetrics)
+	mux.HandleFunc(`/`, handlers.Repo.Default)
+	mux.HandleFunc(`/update/`, handlers.Repo.PostMetrics)
 
 	return mux
 }
