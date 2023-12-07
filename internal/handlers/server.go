@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	// ErrUrlIsInvalid возвращает ошибку, если ссылка некорректная.
-	ErrUrlIsInvalid = errors.New("URL is invalid")
+	// ErrURLIsInvalid возвращает ошибку, если ссылка некорректная.
+	ErrURLIsInvalid = errors.New("URL is invalid")
 )
 
 // Default задет дефолтный маршрут
@@ -84,7 +84,7 @@ func parseURL(r *http.Request) (map[string]string, error) {
 	slice := strings.Split(r.URL.String(), "/")
 	// 3. Проверяем корректность маршрута
 	if len(slice) < 5 {
-		return metric, ErrUrlIsInvalid
+		return metric, ErrURLIsInvalid
 	}
 
 	metric["type"] = slice[2]
