@@ -2,17 +2,20 @@ package store
 
 import (
 	"errors"
-	"log"
+	"github.com/webkimru/go-yandex-metrics/internal/utils"
 )
 
 var (
 	ErrUpdateFailed = errors.New("update failed")
 )
 
+type Counter int64
+type Gauge float64
+
 // MemStorage описываем структуру хранилища в памяти
 type MemStorage struct {
-	Counter map[string]int64
-	Gauge   map[string]float64
+	Counter map[string]Counter
+	Gauge   map[string]Gauge
 }
 
 // NewMemStorage конструктур типа MemStorage
@@ -22,14 +25,18 @@ func NewMemStorage() *MemStorage {
 
 // Update описываем метод в соответствии с контактном интерфейсного типа StoreRepository
 func (ms *MemStorage) Update(metric map[string]string) error {
-	log.Println(metric)
-	//var i interface{} = metric["value"]
-	//switch v := i.(type) {
-	//case int64:
-	//	ms.Counter[metric["name"]] += v
-	//case float64:
-	//	ms.Gauge[metric["name"]] = v
-	//}
-
+	switch value := utils.CheckTypeOfMetricValue(metric["value"]).(type) {
+	case int64:
+		if _, ok := ms.Counter[metric["name"]]; !ok {
+			ms.Counter = make(map[string]Counter)
+		}
+		ms.Counter[metric["name"]] += Counter(value)
+	case float64:
+		if _, ok := ms.Counter[metric["name"]]; !ok {
+			ms.Gauge = make(map[string]Gauge)
+		}
+		ms.Gauge[metric["name"]] = Gauge(value)
+	}
+	// log.Printf("%#v", ms)
 	return ErrUpdateFailed
 }

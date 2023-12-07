@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"errors"
+	"github.com/webkimru/go-yandex-metrics/internal/utils"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -40,7 +40,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. Проверяем тип метрики и в случае корректных данных производим запись
-	switch typeMetric(metric["value"]).(type) {
+	switch utils.CheckTypeOfMetricValue(metric["value"]).(type) {
 	case int64:
 		// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
 		// Пример: /update/gauge/speedAverage/200
@@ -92,17 +92,4 @@ func parseURL(r *http.Request) (map[string]string, error) {
 	metric["value"] = slice[4]
 
 	return metric, nil
-}
-
-// typeMetric проверяет типа метрики из запросов
-func typeMetric(s string) interface{} {
-	i, err := strconv.ParseInt(s, 10, 64)
-	if err == nil {
-		return i
-	}
-	f, err := strconv.ParseFloat(s, 64)
-	if err == nil {
-		return f
-	}
-	return ""
 }
