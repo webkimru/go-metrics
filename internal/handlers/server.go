@@ -19,42 +19,43 @@ func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 
 // PostMetrics обрабатывае входящие метрики
 func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
-	// 1. Принимать метрики по протоколу HTTP методом `POST`.
+	// Принимать метрики по протоколу HTTP методом `POST`
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	//  2. Парсим маршрут и получаем мапку: тип, метрика, значение
+	// При попытке передать запрос без имени метрики возвращать `http.StatusNotFound`.
+	// пример: /update/gauge//10
+	rawPath := r.Header.Get("X-Raw-Path")
+	if rawPath != r.URL.String() {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	// Парсим маршрут и получаем мапку: метрика, значение
 	metric, err := parseURL(r)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	// 3. При попытке передать запрос без имени метрики возвращать `http.StatusNotFound`.
-	// Пример: /update/counter//123
-	if metric["name"] == "" {
-		w.WriteHeader(http.StatusNotFound)
+	// При попытке передать запрос с некорректным типом метрики возвращать `http.StatusBadRequest`.
+	if metric["type"] != "counter" && metric["type"] != "gauge" {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// 4. Проверяем тип метрики и в случае корректных данных производим запись
+	// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
 	switch utils.CheckTypeOfMetricValue(metric["value"]).(type) {
 	case int64:
-		// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
-		// Пример: /update/gauge/speedAverage/200
-		if metric["type"] == "gauge" {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
 		// Запись значения метрики Counter
 		err := m.Store.Update(metric)
 		if err != nil {
 			return
 		}
 	case float64:
-		// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
+		// Некорректное значение для типа - `http.StatusBadRequest`.
 		// Пример: /update/counter/allocCount/20.0003
 		if metric["type"] == "counter" {
 			w.WriteHeader(http.StatusBadRequest)
@@ -65,12 +66,13 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-	default:
-		// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
+
+	case string:
 		// Пример: /update/counter/allocCount/text
-		w.WriteHeader(http.StatusNotFound)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 }
 
 // parseURL парсит маршруты входящих запросов
@@ -82,14 +84,16 @@ func parseURL(r *http.Request) (map[string]string, error) {
 	// Пример: /update/another/               - len = 4
 	metric := map[string]string{}
 	slice := strings.Split(r.URL.String(), "/")
-	// 3. Проверяем корректность маршрута
-	if len(slice) < 5 {
-		return metric, ErrURLIsInvalid
+
+	//log.Println("len(slice)=", len(slice))
+
+	// Проверяем корректность маршрута
+	if len(slice) == 5 {
+		metric["type"] = slice[2]
+		metric["name"] = slice[3]
+		metric["value"] = slice[4]
+		return metric, nil
 	}
 
-	metric["type"] = slice[2]
-	metric["name"] = slice[3]
-	metric["value"] = slice[4]
-
-	return metric, nil
+	return metric, ErrURLIsInvalid
 }
