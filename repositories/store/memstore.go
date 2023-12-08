@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"github.com/webkimru/go-yandex-metrics/internal/utils"
+	"strconv"
 )
 
 var (
@@ -26,14 +27,24 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-// Update описываем метод в соответствии с контактном интерфейсного типа StoreRepository
-func (ms *MemStorage) Update(metric map[string]string) error {
+// UpdateCounter обновляем поле Counter
+// описываем метод в соответствии с контактном интерфейсного типа StoreRepository
+func (ms *MemStorage) UpdateCounter(metric map[string]string) error {
+	value, _ := strconv.ParseInt(metric["value"], 10, 64)
+	ms.Counter[metric["name"]] += Counter(value)
+	// log.Printf("%#v", ms)
+	return nil
+}
+
+// UpdateGauge обновляем поле UpdateGauge
+func (ms *MemStorage) UpdateGauge(metric map[string]string) error {
 	switch value := utils.CheckTypeOfMetricValue(metric["value"]).(type) {
 	case int64:
-		ms.Counter[metric["name"]] += Counter(value)
 	case float64:
 		ms.Gauge[metric["name"]] = Gauge(value)
+	default:
+		return ErrUpdateFailed
 	}
 	// log.Printf("%#v", ms)
-	return ErrUpdateFailed
+	return nil
 }

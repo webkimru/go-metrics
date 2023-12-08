@@ -12,6 +12,11 @@ var (
 	ErrURLIsInvalid = errors.New("URL is invalid")
 )
 
+const (
+	Gauge   = "gauge"
+	Counter = "counter"
+)
+
 // Default задет дефолтный маршрут
 func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
@@ -41,7 +46,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// При попытке передать запрос с некорректным типом метрики возвращать `http.StatusBadRequest`.
-	if metric["type"] != "counter" && metric["type"] != "gauge" {
+	if metric["type"] != Counter && metric["type"] != Gauge {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -49,20 +54,27 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
 	switch utils.CheckTypeOfMetricValue(metric["value"]).(type) {
 	case int64:
-		// Запись значения метрики Counter
-		err := m.Store.Update(metric)
-		if err != nil {
-			return
+		if metric["type"] == Gauge {
+			err := m.Store.UpdateGauge(metric)
+			if err != nil {
+				return
+			}
+		}
+		if metric["type"] == Counter {
+			err := m.Store.UpdateCounter(metric)
+			if err != nil {
+				return
+			}
 		}
 	case float64:
 		// Некорректное значение для типа - `http.StatusBadRequest`.
 		// Пример: /update/counter/allocCount/20.0003
-		if metric["type"] == "counter" {
+		if metric["type"] == Counter {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		// Запись значения метрики gauge
-		err := m.Store.Update(metric)
+		err := m.Store.UpdateGauge(metric)
 		if err != nil {
 			return
 		}
