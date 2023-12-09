@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"reflect"
 	"runtime"
@@ -89,7 +90,7 @@ func getMetric() {
 		m.Sys = Gauge(rt.Sys)
 		m.TotalAlloc = Gauge(rt.TotalAlloc)
 
-		m.RandomValue = Gauge(3.23)
+		m.RandomValue = Gauge(rand.Float64())
 		m.PollCount++
 
 		//log.Println(m.PollCount)
