@@ -11,7 +11,7 @@ import (
 
 const (
 	pollInterval   = 2
-	reportInterval = 2
+	reportInterval = 10
 	targetUrl      = "http://localhost:8080"
 )
 
