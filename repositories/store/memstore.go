@@ -25,8 +25,8 @@ type MemStorage struct {
 // NewMemStorage конструктур типа MemStorage
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
-		Counter: map[string]Counter{},
-		Gauge:   map[string]Gauge{},
+		Counter: make(map[string]Counter, 1),
+		Gauge:   make(map[string]Gauge, 28),
 	}
 }
 
@@ -49,6 +49,7 @@ func (ms *MemStorage) UpdateGauge(metric map[string]string) error {
 
 	switch value := utils.CheckTypeOfMetricValue(metric["value"]).(type) {
 	case int64:
+		ms.Gauge[metric["name"]] = Gauge(value)
 	case float64:
 		ms.Gauge[metric["name"]] = Gauge(value)
 	default:
