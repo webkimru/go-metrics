@@ -3,7 +3,6 @@ package store
 import (
 	"errors"
 	"github.com/webkimru/go-yandex-metrics/internal/utils"
-	"log"
 	"strconv"
 	"sync"
 )
@@ -38,7 +37,7 @@ func (ms *MemStorage) UpdateCounter(metric map[string]string) error {
 
 	value, _ := strconv.ParseInt(metric["value"], 10, 64)
 	ms.Counter[metric["name"]] += Counter(value)
-	log.Printf("%#v", ms)
+	//log.Printf("%#v", ms)
 	return nil
 }
 
@@ -55,6 +54,6 @@ func (ms *MemStorage) UpdateGauge(metric map[string]string) error {
 	default:
 		return ErrUpdateFailed
 	}
-	log.Printf("%#v", ms)
+	//log.Printf("%#v", ms)
 	return nil
 }
