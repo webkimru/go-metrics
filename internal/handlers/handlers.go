@@ -1,6 +1,8 @@
 package handlers
 
-import "github.com/webkimru/go-yandex-metrics/repositories"
+import (
+	"github.com/webkimru/go-yandex-metrics/internal/repositories"
+)
 
 // Repo - репозиторий испльзуется хендлерами
 var Repo *Repository
