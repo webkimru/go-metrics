@@ -4,7 +4,6 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/handlers"
 	"github.com/webkimru/go-yandex-metrics/repositories"
 	"github.com/webkimru/go-yandex-metrics/repositories/store"
-	"net/http"
 )
 
 // run будет полезна при инициализации зависимостей сервера перед запуском
@@ -18,6 +17,6 @@ func run() error {
 	// инициализвруем хендлеры для работы с репозиторием
 	handlers.NewHandlers(repo)
 	//handlers.NewHandlers(storage)
-	// стартуем сервер
-	return http.ListenAndServe(`:8080`, middleware(routes()))
+
+	return nil
 }
