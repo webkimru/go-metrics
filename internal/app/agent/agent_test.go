@@ -3,7 +3,19 @@ package agent
 import (
 	"net/http"
 	"testing"
+	"time"
 )
+
+func TestGetMetric(t *testing.T) {
+	m := Metric{}
+	go GetMetric(&m, 1)
+
+	time.Sleep(2 * time.Second)
+
+	if m.Alloc == 0 {
+		t.Error("sdfsdf")
+	}
+}
 
 func TestSendMetric(t *testing.T) {
 	tests := []struct {
