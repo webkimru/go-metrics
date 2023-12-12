@@ -101,10 +101,10 @@ func SendMetric(metric Metric, path string) {
 			go func(fieldIndex int) {
 				//log.Printf("%s/update/counter/%s/%v", targetUrl, val.Type().Field(fieldIndex).Name, field)
 				resp, err := handlers.AgentRequest(fmt.Sprintf("%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
-				defer resp.Body.Close()
 				if err != nil {
 					return
 				}
+				defer resp.Body.Close()
 
 			}(fieldIndex)
 		case reflect.Float64:
@@ -112,10 +112,10 @@ func SendMetric(metric Metric, path string) {
 			go func(fieldIndex int) {
 				//log.Printf("%s/update/gauge/%s/%v", targetUrl, val.Type().Field(fieldIndex).Name, field)
 				resp, err := handlers.AgentRequest(fmt.Sprintf("%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
-				defer resp.Body.Close()
 				if err != nil {
 					return
 				}
+				defer resp.Body.Close()
 				//_, err := http.Post(fmt.Sprintf("%s/update/gauge/%s/%v", targetUrl, val.Type().Field(fieldIndex).Name, field), "text/plain", nil)
 				//if err != nil {
 				//	return
