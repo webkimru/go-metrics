@@ -1,14 +1,14 @@
 package main
 
 import (
-	"net/http"
+	"github.com/go-chi/chi/v5"
 	"testing"
 )
 
 func TestRoutes(t *testing.T) {
 	mux := routes()
 	switch v := mux.(type) {
-	case *http.ServeMux:
+	case *chi.Mux:
 		//
 	default:
 		t.Errorf("type is not *chi.Mux, type is %T", v)

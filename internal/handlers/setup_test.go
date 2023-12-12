@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/webkimru/go-yandex-metrics/internal/repositories"
 	"github.com/webkimru/go-yandex-metrics/internal/repositories/store"
 	"net/http"
@@ -19,11 +20,12 @@ func TestMain(m *testing.M) {
 }
 
 func getRoutes() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, Repo.Default)
-	mux.HandleFunc(`/update/`, Repo.PostMetrics)
+	r := chi.NewRouter()
+	r.Post("/", Repo.Default)
+	r.Post("/update/{metric}/{name}/{value}", Repo.PostMetrics)
+	r.Get("/value/{metric}/{name}", Repo.GetMetric)
 
-	return mux
+	return r
 }
 
 func middleware(next http.Handler) http.Handler {

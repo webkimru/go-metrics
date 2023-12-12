@@ -5,6 +5,9 @@ package repositories
 type StoreRepository interface {
 	UpdateCounter(metric map[string]string) error
 	UpdateGauge(metric map[string]string) error
+	GetCounter(metric string) (int64, error)
+	GetGauge(metric string) (float64, error)
+	GetAllMetrics() (map[string]interface{}, error)
 }
 
 // Store описываем структура самого хранили
@@ -38,4 +41,31 @@ func (s *Store) UpdateGauge(metric map[string]string) error {
 	}
 
 	return nil
+}
+
+func (s *Store) GetCounter(metric string) (int64, error) {
+	res, err := s.repo.GetCounter(metric)
+	if err != nil {
+		return 0, err
+	}
+
+	return res, nil
+}
+
+func (s *Store) GetGauge(metric string) (float64, error) {
+	res, err := s.repo.GetGauge(metric)
+	if err != nil {
+		return 0, err
+	}
+
+	return res, nil
+}
+
+func (s *Store) GetAllMetrics() (map[string]interface{}, error) {
+	res, err := s.repo.GetAllMetrics()
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

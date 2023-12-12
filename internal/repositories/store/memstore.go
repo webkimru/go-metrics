@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"fmt"
 	"github.com/webkimru/go-yandex-metrics/internal/utils"
 	"strconv"
 	"sync"
@@ -56,4 +57,28 @@ func (ms *MemStorage) UpdateGauge(metric map[string]string) error {
 	}
 	//log.Printf("%#v", ms)
 	return nil
+}
+
+func (ms *MemStorage) GetCounter(metric string) (int64, error) {
+	value, ok := ms.Counter[metric]
+	if !ok {
+		return 0, errors.New(fmt.Sprintf("%s does not exists", metric))
+	}
+	return int64(value), nil
+}
+
+func (ms *MemStorage) GetGauge(metric string) (float64, error) {
+	value, ok := ms.Counter[metric]
+	if !ok {
+		return 0, errors.New(fmt.Sprintf("%s does not exists", metric))
+	}
+	return float64(value), nil
+}
+
+func (ms *MemStorage) GetAllMetrics() (map[string]interface{}, error) {
+	all := make(map[string]interface{}, 30)
+	all["counter"] = ms.Counter
+	all["gauge"] = ms.Gauge
+
+	return all, nil
 }

@@ -1,15 +1,12 @@
 package handlers
 
 import (
-	"errors"
+	"github.com/go-chi/chi/v5"
 	"github.com/webkimru/go-yandex-metrics/internal/utils"
+	"html/template"
+	"log"
 	"net/http"
-	"strings"
-)
-
-var (
-	// ErrURLIsInvalid возвращает ошибку, если ссылка некорректная.
-	ErrURLIsInvalid = errors.New("URL is invalid")
+	"strconv"
 )
 
 const (
@@ -19,31 +16,51 @@ const (
 
 // Default задет дефолтный маршрут
 func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
+	stringHTML := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrics</title>
+</head>
+<body>
+    {{range $k, $v := .counter}}
+    	{{$k}} {{$v}}<br>
+	{{end}}
+    {{range $k, $v := .gauge}}
+    	{{$k}} {{$v}}<br>
+	{{end}}
+</body>
+</html>
+`
+
+	res, err := m.Store.GetAllMetrics()
+	if err != nil {
+		return
+	}
+	log.Println(res)
+
+	t := template.New("Metrics")
+	t, err = t.Parse(stringHTML)
+	if err != nil {
+		return
+	}
+
+	w.Header().Set("Content-Type", "Content-Type")
+	w.WriteHeader(http.StatusOK)
+	err = t.Execute(w, res)
+	if err != nil {
+		return
+	}
 }
 
 // PostMetrics обрабатывае входящие метрики
 func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
-	// Принимать метрики по протоколу HTTP методом `POST`
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	// При попытке передать запрос без имени метрики возвращать `http.StatusNotFound`.
-	// пример: /update/gauge//10
-	rawPath := r.Header.Get("X-Raw-Path")
-	if rawPath != r.URL.String() {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	// Парсим маршрут и получаем мапку: метрика, значение
-	metric, err := parseURL(r)
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+	metric := make(map[string]string, 3)
+	metric["type"] = chi.URLParam(r, "metric")
+	metric["name"] = chi.URLParam(r, "name")
+	metric["value"] = chi.URLParam(r, "value")
 
 	// При попытке передать запрос с некорректным типом метрики возвращать `http.StatusBadRequest`.
 	if metric["type"] != Counter && metric["type"] != Gauge {
@@ -87,25 +104,28 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// parseURL парсит маршруты входящих запросов
-func parseURL(r *http.Request) (map[string]string, error) {
-	// Реализовать парсинг маршрутов
-	// Пример: /update/gauge/speedAverage/200 - len = 5
-	// Пример: /update/counter/               - len = 4
-	// Пример: /update/                       - len = 3
-	// Пример: /update/another/               - len = 4
-	metric := map[string]string{}
-	slice := strings.Split(r.URL.String(), "/")
+func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
+	metric := chi.URLParam(r, "metric")
+	name := chi.URLParam(r, "name")
 
-	//log.Println("len(slice)=", len(slice))
-
-	// Проверяем корректность маршрута
-	if len(slice) == 5 {
-		metric["type"] = slice[2]
-		metric["name"] = slice[3]
-		metric["value"] = slice[4]
-		return metric, nil
+	switch metric {
+	case "counter":
+		res, err := m.Store.GetCounter(name)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(strconv.FormatInt(res, 10)))
+	case "gauge":
+		res, err := m.Store.GetGauge(name)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(strconv.FormatFloat(res, 'f', -1, 64)))
 	}
 
-	return metric, ErrURLIsInvalid
+	w.WriteHeader(http.StatusNotFound)
 }
