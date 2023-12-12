@@ -17,6 +17,7 @@ func TestAgentRequestPositive(t *testing.T) {
 func TestAgentRequestNegative(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		resp, err := AgentRequest("http://abc")
+		resp.Body.Close()
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -25,6 +26,7 @@ func TestAgentRequestNegative(t *testing.T) {
 func TestAgentRequestNegativeEmptyUrl(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		resp, err := AgentRequest("")
+		resp.Body.Close()
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
