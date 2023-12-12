@@ -35,11 +35,13 @@ func TestHandlers(t *testing.T) {
 			switch tt.method {
 			case http.MethodPost:
 				resp, err := ts.Client().Post(ts.URL+tt.url, "text/plain", nil)
+				resp.Body.Close()
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedStatusCode, resp.StatusCode)
 
 			case http.MethodGet:
 				resp, err := ts.Client().Get(ts.URL + tt.url)
+				resp.Body.Close()
 				assert.NoError(t, err)
 				assert.Equal(t, resp.StatusCode, tt.expectedStatusCode)
 			}
