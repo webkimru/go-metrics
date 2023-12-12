@@ -10,7 +10,7 @@ var m agent.Metric
 const (
 	pollInterval   = 2
 	reportInterval = 10
-	targetUrl      = "http://localhost:8080"
+	targetURL      = "http://localhost:8080"
 )
 
 func main() {
@@ -18,6 +18,6 @@ func main() {
 
 	for {
 		time.Sleep(reportInterval * time.Second)
-		agent.SendMetric(m, targetUrl)
+		agent.SendMetric(m, targetURL)
 	}
 }
