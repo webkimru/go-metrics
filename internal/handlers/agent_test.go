@@ -9,6 +9,7 @@ import (
 func TestAgentRequestPositive(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		resp, err := AgentRequest("http://localhost:8080/update/counter/someMetric/123")
+		resp.Body.Close()
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
