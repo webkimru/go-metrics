@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
 )
 
 func TestAgentRequestPositive(t *testing.T) {
-	t.Run("", func(t *testing.T) {
+	t.Run("positive test", func(t *testing.T) {
 		resp, err := AgentRequest("http://localhost:8080/update/counter/someMetric/123")
-		resp.Body.Close()
-		assert.NoError(t, err)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 }
@@ -18,8 +19,8 @@ func TestAgentRequestPositive(t *testing.T) {
 func TestAgentRequestNegative(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		resp, err := AgentRequest("http://abc")
-		resp.Body.Close()
-		assert.Error(t, err)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Nil(t, resp)
 	})
 }
@@ -27,8 +28,8 @@ func TestAgentRequestNegative(t *testing.T) {
 func TestAgentRequestNegativeEmptyUrl(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		resp, err := AgentRequest("")
-		resp.Body.Close()
-		assert.Error(t, err)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Nil(t, resp)
 	})
 }
