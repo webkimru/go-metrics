@@ -47,7 +47,7 @@ type Metric struct {
 	PollCount   Counter
 }
 
-func GetMetric(m *Metric, pollInterval time.Duration) {
+func GetMetric(m *Metric, pollInterval int) {
 	for {
 		runtime.ReadMemStats(&rt)
 		m.Alloc = Gauge(rt.Alloc)
@@ -82,7 +82,7 @@ func GetMetric(m *Metric, pollInterval time.Duration) {
 		m.PollCount++
 
 		//log.Println(m.PollCount)
-		time.Sleep(pollInterval * time.Second)
+		time.Sleep(time.Duration(pollInterval) * time.Second)
 	}
 }
 
