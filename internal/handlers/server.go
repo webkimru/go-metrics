@@ -116,7 +116,10 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(strconv.FormatInt(res, 10)))
+		_, err = w.Write([]byte(strconv.FormatInt(res, 10)))
+		if err != nil {
+			return
+		}
 	case "gauge":
 		res, err := m.Store.GetGauge(name)
 		if err != nil {
@@ -124,7 +127,10 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(strconv.FormatFloat(res, 'f', -1, 64)))
+		_, err = w.Write([]byte(strconv.FormatFloat(res, 'f', -1, 64)))
+		if err != nil {
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusNotFound)
