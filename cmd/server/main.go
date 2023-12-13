@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"net/http"
+	"os"
 )
 
 // main исходный код программы
@@ -11,6 +12,10 @@ func main() {
 	serverAddress := flag.String("a", "localhost:8080", "server address")
 	// разбор командной строки
 	flag.Parse()
+	// определяем переменные окружения
+	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
+		serverAddress = &envRunAddr
+	}
 
 	if err := run(); err != nil {
 		panic(err)
