@@ -13,8 +13,8 @@ var m agent.Metric
 
 var (
 	serverAddress  = flag.String("a", "localhost:8080", "server address")
-	reportInterval = flag.Int("r", 2, "report interval (in seconds)")
-	pollInterval   = flag.Int("p", 1, "poll interval (in seconds)")
+	reportInterval = flag.Int("r", 10, "report interval (in seconds)")
+	pollInterval   = flag.Int("p", 2, "poll interval (in seconds)")
 )
 
 func main() {
