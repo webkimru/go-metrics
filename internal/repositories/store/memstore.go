@@ -68,7 +68,7 @@ func (ms *MemStorage) GetCounter(metric string) (int64, error) {
 }
 
 func (ms *MemStorage) GetGauge(metric string) (float64, error) {
-	value, ok := ms.Counter[metric]
+	value, ok := ms.Gauge[metric]
 	if !ok {
 		return 0, errors.New(fmt.Sprintf("%s does not exists", metric))
 	}
