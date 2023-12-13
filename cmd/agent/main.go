@@ -1,23 +1,27 @@
 package main
 
 import (
+	"flag"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
 	"time"
 )
 
 var m agent.Metric
 
-const (
-	pollInterval   = 2
-	reportInterval = 10
-	targetURL      = "http://localhost:8080"
+var (
+	serverAddress  = flag.String("a", "localhost:8080", "server address")
+	reportInterval = flag.Duration("r", 10*time.Second, "report interval")
+	pollInterval   = flag.Duration("p", 2*time.Second, "poll interval")
 )
 
 func main() {
-	go agent.GetMetric(&m, pollInterval)
+
+	flag.Parse()
+
+	go agent.GetMetric(&m, *pollInterval)
 
 	for {
-		time.Sleep(reportInterval * time.Second)
-		agent.SendMetric(m, targetURL)
+		time.Sleep(*reportInterval)
+		agent.SendMetric(m, *serverAddress)
 	}
 }

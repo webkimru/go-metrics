@@ -97,10 +97,10 @@ func SendMetric(metric Metric, path string) {
 		f := val.FieldByName(val.Type().Field(fieldIndex).Name)
 		switch f.Kind() {
 		case reflect.Int64:
-			//log.Printf("%s/update/counter/%s/%v", targetUrl, val.Type().Field(fieldIndex).Name, field)
+			//log.Printf("%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field)
 			go func(fieldIndex int) {
-				//log.Printf("%s/update/counter/%s/%v", targetUrl, val.Type().Field(fieldIndex).Name, field)
-				resp, err := handlers.AgentRequest(fmt.Sprintf("%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
+				//log.Printf("%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field)
+				resp, err := handlers.AgentRequest(fmt.Sprintf("http://%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
 				if err != nil {
 					return
 				}
@@ -108,10 +108,10 @@ func SendMetric(metric Metric, path string) {
 
 			}(fieldIndex)
 		case reflect.Float64:
-			//log.Printf("%s/update/gauge/%s/%v", targetUrl, val.Type().Field(fieldIndex).Name, field)
+			//log.Printf("%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field)
 			go func(fieldIndex int) {
-				//log.Printf("%s/update/gauge/%s/%v", targetUrl, val.Type().Field(fieldIndex).Name, field)
-				resp, err := handlers.AgentRequest(fmt.Sprintf("%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
+				// log.Printf("%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field)
+				resp, err := handlers.AgentRequest(fmt.Sprintf("http://%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
 				if err != nil {
 					return
 				}
