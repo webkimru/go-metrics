@@ -23,6 +23,6 @@ func (f *FakeStorage) GetGauge(_ string) (float64, error) {
 	return 0, nil
 }
 
-func (ms *FakeStorage) GetAllMetrics() (map[string]interface{}, error) {
+func (f *FakeStorage) GetAllMetrics() (map[string]interface{}, error) {
 	return nil, nil
 }
