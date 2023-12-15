@@ -47,7 +47,7 @@ func (ms *MemStorage) UpdateGauge(metric map[string]string) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	switch value := utils.CheckTypeOfMetricValue(metric["value"]).(type) {
+	switch value := utils.GetValueFromSting(metric["value"]).(type) {
 	case int64:
 		ms.Gauge[metric["name"]] = Gauge(value)
 	case float64:

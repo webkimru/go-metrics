@@ -69,7 +69,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
-	switch utils.CheckTypeOfMetricValue(metric["value"]).(type) {
+	switch utils.GetValueFromSting(metric["value"]).(type) {
 	case int64:
 		if metric["type"] == Gauge {
 			err := m.Store.UpdateGauge(metric)
