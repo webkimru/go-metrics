@@ -1,48 +1,26 @@
 package main
 
 import (
-	"flag"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 	"log"
-	"os"
-	"strconv"
 	"time"
 )
 
 var m metrics.Metric
 
-var (
-	serverAddress  = flag.String("a", "localhost:8080", "server address")
-	reportInterval = flag.Int("r", 10, "report interval (in seconds)")
-	pollInterval   = flag.Int("p", 2, "poll interval (in seconds)")
-)
-
 func main() {
 
-	// разбор командой строки - флаги
-	flag.Parse()
-	// определение переменных окружения
-	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		serverAddress = &envRunAddr
-	}
-	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
-		ri, err := strconv.Atoi(envReportInterval)
-		if err != nil {
-			log.Fatal(err)
-		}
-		reportInterval = &ri
-	}
-	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
-		pi, err := strconv.Atoi(envPollInterval)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pollInterval = &pi
+	// настраиваем/инициализируем приложение
+	serverAddress, reportInterval, pollInterval, err := agent.Setup()
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	// получаем метрики
 	go agent.GetMetric(&m, *pollInterval)
 
+	// отдаем метрики
 	for {
 		time.Sleep(time.Duration(*reportInterval))
 		agent.SendMetric(m, *serverAddress)
