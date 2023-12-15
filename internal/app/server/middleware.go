@@ -1,11 +1,11 @@
-package main
+package server
 
 import (
 	"net/http"
 )
 
-// middleware посредник для обработки входящих звпросов
-func middleware(next http.Handler) http.Handler {
+// Middleware посредник для обработки входящих звпросов
+func Middleware(next http.Handler) http.Handler {
 	// получаем Handler приведением типа http.HandlerFunc
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// устанавливаем заголовок для всех ответов

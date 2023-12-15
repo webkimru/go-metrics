@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"github.com/go-chi/chi/v5"
@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-// routes задаем маршруты для всего сервиса
-func routes() http.Handler {
+// Routes задаем маршруты для всего сервиса
+func Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Get("/", handlers.Repo.Default)
 	r.Post("/update/{metric}/{name}/{value}", handlers.Repo.PostMetrics)

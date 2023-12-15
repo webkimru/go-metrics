@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"github.com/go-chi/chi/v5"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestRoutes(t *testing.T) {
-	mux := routes()
+	mux := Routes()
 	switch v := mux.(type) {
 	case *chi.Mux:
 		//
