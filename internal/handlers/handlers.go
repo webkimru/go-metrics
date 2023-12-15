@@ -15,7 +15,7 @@ type Repository struct {
 // NewRepo создаем новый репозиторий
 func NewRepo(repository repositories.StoreRepository) *Repository {
 	return &Repository{
-		Store: repositories.NewStore(repository),
+		Store: repository,
 	}
 }
 

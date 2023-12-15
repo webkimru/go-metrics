@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/webkimru/go-yandex-metrics/internal/repositories"
 	"github.com/webkimru/go-yandex-metrics/internal/repositories/store"
 	"net/http"
 	"os"
@@ -12,8 +11,7 @@ import (
 
 func TestMain(m *testing.M) {
 	testStorage := store.NewFakeStorage()
-	storage := repositories.NewStore(testStorage)
-	repo := NewRepo(storage)
+	repo := NewRepo(testStorage)
 	NewHandlers(repo)
 
 	os.Exit(m.Run())

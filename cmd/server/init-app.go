@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/webkimru/go-yandex-metrics/internal/handlers"
-	"github.com/webkimru/go-yandex-metrics/internal/repositories"
 	"github.com/webkimru/go-yandex-metrics/internal/repositories/store"
 )
 
@@ -10,13 +9,10 @@ import (
 func run() error {
 	// задаем вариант хранения
 	memStorage := store.NewMemStorage()
-	// иницилизируем новое хранилище
-	storage := repositories.NewStore(memStorage)
-	// инициализируем новый репозиторий
-	repo := handlers.NewRepo(storage)
+	// инициализируем репозиторий хендлеров с указанным вариантом хранения
+	repo := handlers.NewRepo(memStorage)
 	// инициализвруем хендлеры для работы с репозиторием
 	handlers.NewHandlers(repo)
-	//handlers.NewHandlers(storage)
 
 	return nil
 }
