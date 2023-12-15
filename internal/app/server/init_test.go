@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestRun(t *testing.T) {
-	err := Setup()
+func TestSetup(t *testing.T) {
+	_, err := Setup()
 	assert.Nil(t, err)
 }
