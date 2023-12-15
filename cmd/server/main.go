@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server"
+	"log"
 	"net/http"
 	"os"
 )
 
-// main исходный код программы
+// main начало приложения
 func main() {
 	// указываем имя флага, значение по умолчанию и описание
 	serverAddress := flag.String("a", "localhost:8080", "server address")
@@ -18,8 +19,8 @@ func main() {
 		serverAddress = &envRunAddr
 	}
 
-	if err := run(); err != nil {
-		panic(err)
+	if err := server.Setup(); err != nil {
+		log.Fatal(err)
 	}
 
 	// стартуем сервер

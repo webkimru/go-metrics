@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -6,6 +6,6 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	err := run()
+	err := Setup()
 	assert.Nil(t, err)
 }
