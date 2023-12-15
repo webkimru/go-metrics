@@ -1,13 +1,14 @@
 package agent
 
 import (
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 	"net/http"
 	"testing"
 	"time"
 )
 
 func TestGetMetric(t *testing.T) {
-	m := Metric{}
+	m := metrics.Metric{}
 	go GetMetric(&m, 1)
 
 	time.Sleep(2 * time.Second)
@@ -20,12 +21,12 @@ func TestGetMetric(t *testing.T) {
 func TestSendMetric(t *testing.T) {
 	tests := []struct {
 		name               string
-		metric             Metric
+		metric             metrics.Metric
 		expectedStatusCode int
 	}{
 		{
 			name: "positive test",
-			metric: Metric{
+			metric: metrics.Metric{
 				RandomValue: 123.123,
 				PollCount:   1,
 			},

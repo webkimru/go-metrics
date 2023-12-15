@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/webkimru/go-yandex-metrics/internal/handlers"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/handlers"
 	"net/http"
 )
 

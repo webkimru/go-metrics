@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 	"log"
 	"os"
 	"strconv"
 	"time"
 )
 
-var m agent.Metric
+var m metrics.Metric
 
 var (
 	serverAddress  = flag.String("a", "localhost:8080", "server address")

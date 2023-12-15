@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/webkimru/go-yandex-metrics/internal/repositories/store"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 	"net/http"
 	"os"
 	"strings"

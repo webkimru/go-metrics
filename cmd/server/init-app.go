@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/webkimru/go-yandex-metrics/internal/handlers"
-	"github.com/webkimru/go-yandex-metrics/internal/repositories/store"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/handlers"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 )
 
 // run будет полезна при инициализации зависимостей сервера перед запуском
