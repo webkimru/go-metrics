@@ -21,7 +21,7 @@ func main() {
 	go agent.GetMetric(&m, *pollInterval)
 
 	// отдаем метрики
-	reportDuration := time.Duration(*reportInterval)
+	reportDuration := time.Duration(*reportInterval) * time.Second
 	for {
 		time.Sleep(reportDuration)
 		agent.SendMetric(m, *serverAddress)
