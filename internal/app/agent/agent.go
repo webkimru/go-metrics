@@ -14,6 +14,8 @@ import (
 var rt runtime.MemStats
 
 func GetMetric(m *metrics.Metric, pollInterval int) {
+	pollDuration := time.Duration(pollInterval) * time.Second
+
 	for {
 		runtime.ReadMemStats(&rt)
 		m.Alloc = metrics.Gauge(rt.Alloc)
@@ -48,7 +50,7 @@ func GetMetric(m *metrics.Metric, pollInterval int) {
 		m.PollCount++
 
 		//log.Println(m.PollCount)
-		time.Sleep(time.Duration(pollInterval) * time.Second)
+		time.Sleep(pollDuration)
 	}
 }
 
