@@ -3,6 +3,7 @@ package agent
 import (
 	"fmt"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
+	"log"
 	"math/rand"
 	"net/http"
 	"reflect"
@@ -65,22 +66,20 @@ func SendMetric(metric metrics.Metric, path string) {
 			//log.Printf("%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field)
 			go func(fieldIndex int) {
 				//log.Printf("%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field)
-				resp, err := Send(fmt.Sprintf("http://%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
+				err := Send(fmt.Sprintf("http://%s/update/counter/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
 				if err != nil {
-					return
+					log.Println(err)
 				}
-				defer resp.Body.Close()
 
 			}(fieldIndex)
 		case reflect.Float64:
 			//log.Printf("%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field)
 			go func(fieldIndex int) {
 				// log.Printf("%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field)
-				resp, err := Send(fmt.Sprintf("http://%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
+				err := Send(fmt.Sprintf("http://%s/update/gauge/%s/%v", path, val.Type().Field(fieldIndex).Name, field))
 				if err != nil {
-					return
+					log.Println(err)
 				}
-				defer resp.Body.Close()
 				//_, err := http.Post(fmt.Sprintf("%s/update/gauge/%s/%v", targetUrl, val.Type().Field(fieldIndex).Name, field), "text/plain", nil)
 				//if err != nil {
 				//	return
@@ -90,19 +89,24 @@ func SendMetric(metric metrics.Metric, path string) {
 	}
 }
 
-func Send(url string) (*http.Response, error) {
+func Send(url string) error {
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "text/plain")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("expected status code 200, but got %d", resp.StatusCode)
+	}
+
 	defer resp.Body.Close()
 
-	return resp, nil
+	return nil
 }
