@@ -36,22 +36,28 @@ func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 
 	res, err := m.Store.GetAllMetrics()
 	if err != nil {
+		log.Println("failed to get the data from storage, GetAllMetrics() = ", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	log.Println(res)
 
 	t := template.New("Metrics")
 	t, err = t.Parse(stringHTML)
 	if err != nil {
+		log.Println("HTML template is not parsed, Parse() = ", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "Content-Type")
-	w.WriteHeader(http.StatusOK)
 	err = t.Execute(w, res)
 	if err != nil {
+		log.Println("template execution error, Execute() = ", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // PostMetrics обрабатывае входящие метрики
@@ -74,12 +80,16 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		if metric["type"] == Gauge {
 			err := m.Store.UpdateGauge(metric)
 			if err != nil {
+				log.Println("failed to update the data from storage, UpdateGauge() = ", err)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 		}
 		if metric["type"] == Counter {
 			err := m.Store.UpdateCounter(metric)
 			if err != nil {
+				log.Println("failed to update the data from storage, UpdateCounter() = ", err)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 		}
@@ -93,6 +103,8 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		// Запись значения метрики gauge
 		err := m.Store.UpdateGauge(metric)
 		if err != nil {
+			log.Println("failed to update the data from storage, UpdateGauge() = ", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -112,25 +124,32 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 	case "counter":
 		res, err := m.Store.GetCounter(name)
 		if err != nil {
+			log.Println("failed to get the data from storage, GetCounter() = ", err)
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 		_, err = w.Write([]byte(strconv.FormatInt(res, 10)))
 		if err != nil {
+			log.Println("failed to write the data to the connection, Write() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
+
 	case "gauge":
 		res, err := m.Store.GetGauge(name)
 		if err != nil {
+			log.Println("failed to get the data from storage, GetGauge() = ", err)
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 		_, err = w.Write([]byte(strconv.FormatFloat(res, 'f', -1, 64)))
 		if err != nil {
+			log.Println("failed to write the data to the connection, Write() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
 	}
 
 	w.WriteHeader(http.StatusNotFound)
