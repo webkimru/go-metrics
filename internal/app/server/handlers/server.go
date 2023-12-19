@@ -74,46 +74,39 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// При попытке передать запрос с некорректным типом метрики или значением возвращать `http.StatusBadRequest`.
-	switch utils.GetValueFromSting(metric["value"]).(type) {
-	case int64:
-		if metric["type"] == Gauge {
-			err := m.Store.UpdateGauge(metric)
-			if err != nil {
-				log.Println("failed to update the data from storage, UpdateGauge() = ", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}
-		if metric["type"] == Counter {
-			err := m.Store.UpdateCounter(metric)
-			if err != nil {
-				log.Println("failed to update the data from storage, UpdateCounter() = ", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}
-	case float64:
-		// Некорректное значение для типа - `http.StatusBadRequest`.
-		// Пример: /update/counter/allocCount/20.0003
-		if metric["type"] == Counter {
+	// При попытке передать запрос с некорректным значением возвращать `http.StatusBadRequest`.
+	switch metric["type"] {
+	case Gauge:
+		value, err := utils.GetFloat64ValueFromSting(metric["value"])
+		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		// Запись значения метрики gauge
-		err := m.Store.UpdateGauge(metric)
+		err = m.Store.UpdateGauge(metric["name"], value)
 		if err != nil {
 			log.Println("failed to update the data from storage, UpdateGauge() = ", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-	case string:
-		// Пример: /update/counter/allocCount/text
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	case Counter:
+		value, err := utils.GetInt64ValueFromSting(metric["value"])
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		err = m.Store.UpdateCounter(metric["name"], value)
+		if err != nil {
+			log.Println("failed to update the data from storage, UpdateCounter() = ", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+	}
 }
 
 func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
@@ -121,7 +114,7 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 
 	switch metric {
-	case "counter":
+	case Counter:
 		res, err := m.Store.GetCounter(name)
 		if err != nil {
 			log.Println("failed to get the data from storage, GetCounter() = ", err)
@@ -136,7 +129,7 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 
-	case "gauge":
+	case Gauge:
 		res, err := m.Store.GetGauge(name)
 		if err != nil {
 			log.Println("failed to get the data from storage, GetGauge() = ", err)

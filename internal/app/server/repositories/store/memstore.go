@@ -1,15 +1,8 @@
 package store
 
 import (
-	"errors"
 	"fmt"
-	"github.com/webkimru/go-yandex-metrics/internal/utils"
-	"strconv"
 	"sync"
-)
-
-var (
-	ErrUpdateFailed = errors.New("update failed")
 )
 
 type Counter int64
@@ -32,29 +25,21 @@ func NewMemStorage() *MemStorage {
 
 // UpdateCounter обновляем поле Counter
 // описываем метод в соответствии с контактном интерфейсного типа StoreRepository
-func (ms *MemStorage) UpdateCounter(metric map[string]string) error {
+func (ms *MemStorage) UpdateCounter(name string, value int64) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	value, _ := strconv.ParseInt(metric["value"], 10, 64)
-	ms.Counter[metric["name"]] += Counter(value)
+	ms.Counter[name] += Counter(value)
 	//log.Printf("%#v", ms)
 	return nil
 }
 
 // UpdateGauge обновляем поле UpdateGauge
-func (ms *MemStorage) UpdateGauge(metric map[string]string) error {
+func (ms *MemStorage) UpdateGauge(name string, value float64) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	switch value := utils.GetValueFromSting(metric["value"]).(type) {
-	case int64:
-		ms.Gauge[metric["name"]] = Gauge(value)
-	case float64:
-		ms.Gauge[metric["name"]] = Gauge(value)
-	default:
-		return ErrUpdateFailed
-	}
+	ms.Gauge[name] = Gauge(value)
 	//log.Printf("%#v", ms)
 	return nil
 }
