@@ -7,11 +7,11 @@ func NewFakeStorage() *FakeStorage {
 	return &FakeStorage{}
 }
 
-func (f *FakeStorage) UpdateCounter(_ map[string]string) error {
+func (f *FakeStorage) UpdateCounter(_ string, _ int64) error {
 	return nil
 }
 
-func (f *FakeStorage) UpdateGauge(_ map[string]string) error {
+func (f *FakeStorage) UpdateGauge(_ string, _ float64) error {
 	return nil
 }
 
