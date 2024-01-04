@@ -15,7 +15,7 @@ const (
 	Gauge   = "gauge"
 	Counter = "counter"
 
-	ContentTypeJson = "application/json"
+	ContentTypeJSON = "application/json"
 )
 
 // Default задет дефолтный маршрут
@@ -68,7 +68,7 @@ func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 	// application/json
-	if r.Header.Get("Content-Type") == ContentTypeJson {
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
 		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -137,7 +137,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 	// application/json
-	if r.Header.Get("Content-Type") == ContentTypeJson {
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
 		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -183,10 +183,10 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 
 func (m *Repository) WriteResponseCounter(w http.ResponseWriter, r *http.Request, metrics models.Metrics, value int64) error {
 	// application/json
-	if r.Header.Get("Content-Type") == ContentTypeJson {
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
 		metrics.Delta = &value
 
-		w.Header().Set("Content-Type", ContentTypeJson)
+		w.Header().Set("Content-Type", ContentTypeJSON)
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(metrics); err != nil {
 			return err
@@ -207,10 +207,10 @@ func (m *Repository) WriteResponseCounter(w http.ResponseWriter, r *http.Request
 
 func (m *Repository) WriteResponseGauge(w http.ResponseWriter, r *http.Request, metrics models.Metrics, value float64) error {
 	// application/json
-	if r.Header.Get("Content-Type") == ContentTypeJson {
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
 		metrics.Value = &value
 
-		w.Header().Set("Content-Type", ContentTypeJson)
+		w.Header().Set("Content-Type", ContentTypeJSON)
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(metrics); err != nil {
 			return err
