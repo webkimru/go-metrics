@@ -186,7 +186,7 @@ func (m *Repository) WriteResponseCounter(w http.ResponseWriter, r *http.Request
 	if r.Header.Get("Content-Type") == ContentTypeJson {
 		metrics.Delta = &value
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", ContentTypeJson)
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(metrics); err != nil {
 			return err
@@ -210,7 +210,7 @@ func (m *Repository) WriteResponseGauge(w http.ResponseWriter, r *http.Request, 
 	if r.Header.Get("Content-Type") == ContentTypeJson {
 		metrics.Value = &value
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", ContentTypeJson)
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(metrics); err != nil {
 			return err
