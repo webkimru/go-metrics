@@ -67,45 +67,46 @@ func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 // PostMetrics обрабатывае входящие метрики
 func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
-	metric := make(map[string]string, 3)
 	// application/json
 	if r.Header.Get("Content-Type") == ContentTypeJson {
 		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		metric["type"] = metrics.MType
-		metric["name"] = metrics.ID
-		if metrics.Delta != nil {
-			metric["value"] = strconv.Itoa(int(*metrics.Delta))
-		}
-		if metrics.Value != nil {
-			metric["value"] = strconv.FormatFloat(*metrics.Value, 'f', -1, 64)
-		}
 	} else {
 		// text/plain
-		metric["type"] = chi.URLParam(r, "metric")
-		metric["name"] = chi.URLParam(r, "name")
-		metric["value"] = chi.URLParam(r, "value")
+		metrics.MType = chi.URLParam(r, "metric")
+		metrics.ID = chi.URLParam(r, "name")
+		switch metrics.MType {
+		case Counter:
+			value, err := utils.GetInt64ValueFromSting(chi.URLParam(r, "value"))
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			metrics.Delta = &value
+		case Gauge:
+			value, err := utils.GetFloat64ValueFromSting(chi.URLParam(r, "value"))
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			metrics.Value = &value
+		}
 	}
 
 	// При попытке передать запрос с некорректным типом метрики возвращать `http.StatusBadRequest`.
-	if metric["type"] != Counter && metric["type"] != Gauge {
+	if metrics.MType != Counter && metrics.MType != Gauge {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// При попытке передать запрос с некорректным значением возвращать `http.StatusBadRequest`.
-	switch metric["type"] {
+	switch metrics.MType {
 	case Gauge:
-		value, err := utils.GetFloat64ValueFromSting(metric["value"])
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		res, err := m.Store.UpdateGauge(metric["name"], value)
+		res, err := m.Store.UpdateGauge(metrics.ID, *metrics.Value)
 		if err != nil {
 			log.Println("failed to update the data from storage, UpdateGauge() = ", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -117,13 +118,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case Counter:
-		value, err := utils.GetInt64ValueFromSting(metric["value"])
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		res, err := m.Store.UpdateCounter(metric["name"], value)
+		res, err := m.Store.UpdateCounter(metrics.ID, *metrics.Delta)
 		if err != nil {
 			log.Println("failed to update the data from storage, UpdateCounter() = ", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -141,24 +136,21 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
-	var mtype, mname string
 	// application/json
 	if r.Header.Get("Content-Type") == ContentTypeJson {
 		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		mtype = metrics.MType
-		mname = metrics.ID
 	} else {
 		// text/plain
-		mtype = chi.URLParam(r, "metric")
-		mname = chi.URLParam(r, "name")
+		metrics.MType = chi.URLParam(r, "metric")
+		metrics.ID = chi.URLParam(r, "name")
 	}
 
-	switch mtype {
+	switch metrics.MType {
 	case Counter:
-		res, err := m.Store.GetCounter(mname)
+		res, err := m.Store.GetCounter(metrics.ID)
 		if err != nil {
 			log.Println("failed to get the data from storage, GetCounter() = ", err)
 			w.WriteHeader(http.StatusNotFound)
@@ -171,7 +163,7 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case Gauge:
-		res, err := m.Store.GetGauge(mname)
+		res, err := m.Store.GetGauge(metrics.ID)
 		if err != nil {
 			log.Println("failed to get the data from storage, GetGauge() = ", err)
 			w.WriteHeader(http.StatusNotFound)
