@@ -12,10 +12,18 @@ func Routes() http.Handler {
 	r := chi.NewRouter()
 	// вариант подвключения middleware
 	r.Use(middleware.WithLogging)
-	// описание маршрутов
-	r.Get("/", handlers.Repo.Default)
-	r.Post("/update/{metric}/{name}/{value}", handlers.Repo.PostMetrics)
-	r.Get("/value/{metric}/{name}", handlers.Repo.GetMetric)
+	// text/plain
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.TextPlain)
+		r.Get("/", handlers.Repo.Default)
+		r.Post("/update/{metric}/{name}/{value}", handlers.Repo.PostMetrics)
+		r.Get("/value/{metric}/{name}", handlers.Repo.GetMetric)
+	})
+	// application/json
+	r.Group(func(r chi.Router) {
+		r.Post("/update/", handlers.Repo.PostMetrics)
+		r.Post("/value/", handlers.Repo.GetMetric)
+	})
 
 	return r
 }
