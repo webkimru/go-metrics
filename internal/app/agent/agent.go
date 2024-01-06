@@ -51,7 +51,6 @@ func GetMetric(m *metrics.Metric, pollInterval int) {
 		m.RandomValue = metrics.Gauge(rand.Float64())
 		m.PollCount++
 
-		//log.Println(m.PollCount)
 		time.Sleep(pollDuration)
 	}
 }
@@ -127,11 +126,17 @@ func Send(url string, request interface{}) error {
 		return fmt.Errorf("failed to marshal request=%v", request)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	b, err := Compress(data)
+	if err != nil {
+		return fmt.Errorf("failed Compress()=%v", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

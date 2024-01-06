@@ -53,15 +53,14 @@ func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "Content-Type")
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
 	err = t.Execute(w, res)
 	if err != nil {
 		log.Println("template execution error, Execute() = ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 // PostMetrics обрабатывае входящие метрики
