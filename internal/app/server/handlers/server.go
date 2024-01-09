@@ -215,7 +215,7 @@ func (m *Repository) WriteResponseCounter(w http.ResponseWriter, r *http.Request
 
 	// text/plain
 	w.WriteHeader(http.StatusOK)
-	_, err := w.Write([]byte(strconv.Itoa(int(*metrics.Value))))
+	_, err := w.Write([]byte(strconv.Itoa(int(*metrics.Delta))))
 	if err != nil {
 		return err
 	}
