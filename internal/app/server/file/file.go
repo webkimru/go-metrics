@@ -26,36 +26,6 @@ func Initialize(storeInterval int, storeFilePath string, storeRestore bool) erro
 	Recorder.StoreFilePath = storeFilePath
 	Recorder.StoreRestore = storeRestore
 
-	// пустое значение отключает функцию записи на диск
-	if storeFilePath == "" {
-		return nil
-	}
-
-	// загружать или нет ранее сохранённые значения из указанного файла при старте сервера (по умолчанию true)
-	//if storeRestore == true {
-	//	//counter, gauge, err := Reader()
-	//	//if err != nil {
-	//	//	return err
-	//	//}
-	//	err := handlers.Repo.Store.SetAllMetrics("1") // counter, gauge
-	//	if err != nil {
-	//		return err
-	//	}
-	//	//log.Println(counter, gauge)
-	//}
-
-	//producer, err := NewProducer(storeFilePath)
-	//if err != nil {
-	//	return err
-	//}
-	//Recorder.Producer = producer
-	//
-	//consumer, err := NewConsumer(storeFilePath)
-	//if err != nil {
-	//	return err
-	//}
-	//Recorder.Consumer = consumer
-
 	return nil
 }
 
