@@ -19,6 +19,7 @@ func main() {
 	go func() {
 		<-c
 		async.SaveData()
+		log.Println("Successful shutdown")
 		os.Exit(0)
 	}()
 
