@@ -17,21 +17,25 @@ func FileWriter() {
 			for {
 				time.Sleep(storeInterval)
 
-				res, err := handlers.Repo.Store.GetAllMetrics()
-				if err != nil {
-					log.Println("failed to get the data from storage, GetAllMetrics() = ", err)
-				}
-
-				// записываем в файл
-				producer, err := file.NewProducer(file.Recorder.StoreFilePath)
-				if err != nil {
-					log.Println(err)
-				}
-				if err := producer.WriteJson(res); err != nil {
-					log.Println(err)
-				}
-				producer.Close()
+				SaveData()
 			}
 		}()
 	}
+}
+
+func SaveData() {
+	res, err := handlers.Repo.Store.GetAllMetrics()
+	if err != nil {
+		log.Println("failed to get the data from storage, GetAllMetrics() = ", err)
+	}
+
+	// записываем в файл
+	producer, err := file.NewProducer(file.Recorder.StoreFilePath)
+	if err != nil {
+		log.Println(err)
+	}
+	if err := producer.WriteJson(res); err != nil {
+		log.Println(err)
+	}
+	producer.Close()
 }
