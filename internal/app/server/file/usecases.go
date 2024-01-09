@@ -25,7 +25,7 @@ func SyncWriter(getAllMetrics func() (map[string]interface{}, error)) error {
 	if err != nil {
 		return err
 	}
-	if err := producer.WriteJson(res); err != nil {
+	if err := producer.WriteJSON(res); err != nil {
 		return err
 	}
 	defer producer.Close()
@@ -39,7 +39,7 @@ func Reader() (*StructFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := consumer.ReadJson()
+	res, err := consumer.ReadJSON()
 	if err != nil {
 		return nil, err
 	}

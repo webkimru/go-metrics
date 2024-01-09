@@ -48,7 +48,7 @@ func NewProducer(filename string) (*Producer, error) {
 	}, nil
 }
 
-func (p *Producer) WriteJson(metrics map[string]interface{}) error {
+func (p *Producer) WriteJSON(metrics map[string]interface{}) error {
 	data, err := json.Marshal(&metrics)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func NewConsumer(filename string) (*Consumer, error) {
 	}, nil
 }
 
-func (c *Consumer) ReadJson() (*StructFile, error) {
+func (c *Consumer) ReadJSON() (*StructFile, error) {
 	// одиночное сканирование до следующей строки
 	if !c.scanner.Scan() {
 		return nil, c.scanner.Err()

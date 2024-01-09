@@ -34,7 +34,7 @@ func SaveData() {
 	if err != nil {
 		logger.Log.Errorln(err)
 	}
-	if err := producer.WriteJson(res); err != nil {
+	if err := producer.WriteJSON(res); err != nil {
 		logger.Log.Errorln(err)
 	}
 	producer.Close()
