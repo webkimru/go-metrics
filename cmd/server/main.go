@@ -17,7 +17,7 @@ func main() {
 	}
 
 	// асинхронная запись мерик
-	async.Writer()
+	async.FileWriter()
 
 	// стартуем сервер
 	err = http.ListenAndServe(*serverAddress, server.Routes())
