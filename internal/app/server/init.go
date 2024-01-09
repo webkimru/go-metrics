@@ -58,13 +58,16 @@ func Setup() (*string, error) {
 	// задаем вариант хранения
 	memStorage := store.NewMemStorage()
 	// загружать ранее сохранённые значения из указанного файла при старте сервера
-	if *storeRestore == true {
-		counter, gauge, err := file.Reader()
+	if *storeRestore {
+		res, err := file.Reader()
 		if err != nil {
 			return nil, err
 		}
-		memStorage.Counter = counter
-		memStorage.Gauge = gauge
+		// если не пустой файл
+		if res != nil {
+			memStorage.Counter = res.Counter
+			memStorage.Gauge = res.Gauge
+		}
 	}
 	// инициализируем репозиторий хендлеров с указанным вариантом хранения
 	repo := handlers.NewRepo(memStorage)

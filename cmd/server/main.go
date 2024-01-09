@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/file/async"
 	"log"
 	"net/http"
 )
@@ -14,6 +15,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// асинхронная запись мерик
+	async.Writer()
 
 	// стартуем сервер
 	err = http.ListenAndServe(*serverAddress, server.Routes())

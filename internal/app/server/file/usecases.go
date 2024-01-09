@@ -1,7 +1,6 @@
 package file
 
 import (
-	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 	"log"
 )
 
@@ -34,19 +33,17 @@ func SyncWriter(getAllMetrics func() (map[string]interface{}, error)) error {
 	return nil
 }
 
-func AsyncWriter() {}
-
-func Reader() (map[string]store.Counter, map[string]store.Gauge, error) {
+func Reader() (*StructFile, error) {
 	// читаем из файла
 	consumer, err := NewConsumer(Recorder.StoreFilePath)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	res, err := consumer.ReadJson()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer consumer.Close()
 
-	return res.Counter, res.Gauge, nil
+	return res, nil
 }
