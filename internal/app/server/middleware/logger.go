@@ -49,7 +49,7 @@ func WithLogging(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		logger.Log.Sugar().Infoln(
+		logger.Log.Infoln(
 			"uri", r.RequestURI,
 			"method", r.Method,
 			"status", responseData.status, // получаем перехваченный код статуса ответа

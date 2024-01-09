@@ -1,7 +1,7 @@
 package file
 
 import (
-	"log"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
 )
 
 func SyncWriter(getAllMetrics func() (map[string]interface{}, error)) error {
@@ -17,7 +17,7 @@ func SyncWriter(getAllMetrics func() (map[string]interface{}, error)) error {
 
 	res, err := getAllMetrics()
 	if err != nil {
-		log.Println("failed to get the data from storage, GetAllMetrics() = ", err)
+		logger.Log.Errorln("failed to get the data from storage, GetAllMetrics() = ", err)
 	}
 
 	// записываем в файл

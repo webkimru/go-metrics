@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/file/async"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +20,7 @@ func main() {
 	go func() {
 		<-c
 		async.SaveData()
-		log.Println("Successful shutdown")
+		logger.Log.Infoln("Successful shutdown")
 		os.Exit(0)
 	}()
 
