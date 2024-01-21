@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"github.com/go-chi/chi/v5"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/file"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/models"
 	"github.com/webkimru/go-yandex-metrics/internal/utils"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -12,6 +15,8 @@ import (
 const (
 	Gauge   = "gauge"
 	Counter = "counter"
+
+	ContentTypeJSON = "application/json"
 )
 
 // Default задет дефолтный маршрут
@@ -36,7 +41,7 @@ func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 
 	res, err := m.Store.GetAllMetrics()
 	if err != nil {
-		log.Println("failed to get the data from storage, GetAllMetrics() = ", err)
+		logger.Log.Errorln("failed to get the data from storage, GetAllMetrics() = ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -44,64 +49,102 @@ func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 	t := template.New("Metrics")
 	t, err = t.Parse(stringHTML)
 	if err != nil {
-		log.Println("HTML template is not parsed, Parse() = ", err)
+		logger.Log.Errorln("HTML template is not parsed, Parse() = ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "Content-Type")
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
 	err = t.Execute(w, res)
 	if err != nil {
-		log.Println("template execution error, Execute() = ", err)
+		logger.Log.Errorln("template execution error, Execute() = ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 // PostMetrics обрабатывае входящие метрики
 func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
-	// Парсим маршрут и получаем мапку: метрика, значение
-	metric := make(map[string]string, 3)
-	metric["type"] = chi.URLParam(r, "metric")
-	metric["name"] = chi.URLParam(r, "name")
-	metric["value"] = chi.URLParam(r, "value")
+	var metrics models.Metrics
+	// application/json
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
+		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		// text/plain
+		metrics.MType = chi.URLParam(r, "metric")
+		metrics.ID = chi.URLParam(r, "name")
+		switch metrics.MType {
+		case Counter:
+			value, err := utils.GetInt64ValueFromSting(chi.URLParam(r, "value"))
+			if err != nil {
+				logger.Log.Errorln(err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			metrics.Delta = &value
+		case Gauge:
+			value, err := utils.GetFloat64ValueFromSting(chi.URLParam(r, "value"))
+			if err != nil {
+				logger.Log.Errorln(err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			metrics.Value = &value
+		}
+	}
 
 	// При попытке передать запрос с некорректным типом метрики возвращать `http.StatusBadRequest`.
-	if metric["type"] != Counter && metric["type"] != Gauge {
+	if metrics.MType != Counter && metrics.MType != Gauge {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// При попытке передать запрос с некорректным значением возвращать `http.StatusBadRequest`.
-	switch metric["type"] {
+	switch metrics.MType {
 	case Gauge:
-		value, err := utils.GetFloat64ValueFromSting(metric["value"])
+		// Обновление данных в хранилище
+		res, err := m.Store.UpdateGauge(metrics.ID, *metrics.Value)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		err = m.Store.UpdateGauge(metric["name"], value)
-		if err != nil {
-			log.Println("failed to update the data from storage, UpdateGauge() = ", err)
+			logger.Log.Errorln("failed to update the data from storage, UpdateGauge() = ", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
+		}
+		metrics.Value = &res
+		// Сохранение данных в файл
+		if err := file.SyncWriter(m.Store.GetAllMetrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the file, WriteFile() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// Ответ клиенту
+		if err := m.WriteResponseGauge(w, r, metrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the connection, WriteResponseGauge() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 
 	case Counter:
-		value, err := utils.GetInt64ValueFromSting(metric["value"])
+		// Обновление данных в хранилище
+		res, err := m.Store.UpdateCounter(metrics.ID, *metrics.Delta)
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		err = m.Store.UpdateCounter(metric["name"], value)
-		if err != nil {
-			log.Println("failed to update the data from storage, UpdateCounter() = ", err)
+			logger.Log.Errorln("failed to update the data from storage, UpdateCounter() = ", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
+		}
+		metrics.Delta = &res
+		// Сохранение данных в файл
+		if err := file.SyncWriter(m.Store.GetAllMetrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the file, WriteFile() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// Ответ клиенту
+		if err := m.WriteResponseCounter(w, r, metrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the connection, WriteResponseCounter() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 
 	default:
@@ -110,40 +153,94 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
-	metric := chi.URLParam(r, "metric")
-	name := chi.URLParam(r, "name")
-
-	switch metric {
-	case Counter:
-		res, err := m.Store.GetCounter(name)
-		if err != nil {
-			log.Println("failed to get the data from storage, GetCounter() = ", err)
-			w.WriteHeader(http.StatusNotFound)
+	var metrics models.Metrics
+	// application/json
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
+		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		_, err = w.Write([]byte(strconv.FormatInt(res, 10)))
-		if err != nil {
-			log.Println("failed to write the data to the connection, Write() =", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-
-	case Gauge:
-		res, err := m.Store.GetGauge(name)
-		if err != nil {
-			log.Println("failed to get the data from storage, GetGauge() = ", err)
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		_, err = w.Write([]byte(strconv.FormatFloat(res, 'f', -1, 64)))
-		if err != nil {
-			log.Println("failed to write the data to the connection, Write() =", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
+	} else {
+		// text/plain
+		metrics.MType = chi.URLParam(r, "metric")
+		metrics.ID = chi.URLParam(r, "name")
 	}
 
-	w.WriteHeader(http.StatusNotFound)
+	switch metrics.MType {
+	case Counter:
+		res, err := m.Store.GetCounter(metrics.ID)
+		if err != nil {
+			logger.Log.Infoln("failed to get the data from storage, GetCounter() = ", err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		metrics.Delta = &res
+		if err := m.WriteResponseCounter(w, r, metrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the connection, WriteResponseCounter() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+	case Gauge:
+		res, err := m.Store.GetGauge(metrics.ID)
+		if err != nil {
+			logger.Log.Infoln("failed to get the data from storage, GetGauge() = ", err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		metrics.Value = &res
+		if err := m.WriteResponseGauge(w, r, metrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the connection, WriteResponseGauge() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+	default:
+		w.WriteHeader(http.StatusNotFound)
+	}
+
+}
+
+func (m *Repository) WriteResponseCounter(w http.ResponseWriter, r *http.Request, metrics models.Metrics) error {
+	// application/json
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
+		w.Header().Set("Content-Type", ContentTypeJSON)
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(metrics); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// text/plain
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte(strconv.Itoa(int(*metrics.Delta))))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Repository) WriteResponseGauge(w http.ResponseWriter, r *http.Request, metrics models.Metrics) error {
+	// application/json
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
+		w.Header().Set("Content-Type", ContentTypeJSON)
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(metrics); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// text/plain
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte(strconv.FormatFloat(*metrics.Value, 'f', -1, 64)))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
