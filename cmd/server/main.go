@@ -37,5 +37,7 @@ func main() {
 
 	// стартуем сервер
 	err = http.ListenAndServe(*serverAddress, server.Routes())
-	panic(err)
+	if err != nil {
+		panic(err)
+	}
 }
