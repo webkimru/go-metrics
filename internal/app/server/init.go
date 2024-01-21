@@ -6,6 +6,7 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/handlers"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store/pg"
 	"log"
 	"os"
 	"strconv"
@@ -21,6 +22,8 @@ func Setup() (*string, error) {
 	storeInterval := flag.Int("i", 300, "store interval")
 	storeFilePath := flag.String("f", "/tmp/metrics-db.json", "file storage path")
 	storeRestore := flag.Bool("r", true, "restore saved data")
+	// DB
+	databaseDSN := flag.String("d", "", "database dsn")
 	// разбор командной строки
 	flag.Parse()
 	// определяем переменные окружения
@@ -44,6 +47,9 @@ func Setup() (*string, error) {
 		}
 		storeRestore = &sr
 	}
+	if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" {
+		databaseDSN = &envDatabaseDSN
+	}
 
 	// инициализируем логер
 	if err := logger.Initialize("info"); err != nil {
@@ -52,6 +58,11 @@ func Setup() (*string, error) {
 
 	// инициализируем хранение метрик в файле
 	if err := file.Initialize(*storeInterval, *storeFilePath, *storeRestore); err != nil {
+		return nil, err
+	}
+
+	// инициализируем работу с PostgreSQL
+	if err := pg.ConnectToDB(*databaseDSN); err != nil {
 		return nil, err
 	}
 

@@ -4,6 +4,7 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/file/async"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store/pg"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +22,7 @@ func main() {
 		<-c
 		async.SaveData()
 		logger.Log.Infoln("Successful shutdown")
+		pg.DB.Close()
 		os.Exit(0)
 	}()
 
