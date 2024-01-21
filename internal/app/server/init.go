@@ -62,8 +62,10 @@ func Setup() (*string, error) {
 	}
 
 	// инициализируем работу с PostgreSQL
-	if err := pg.ConnectToDB(*databaseDSN); err != nil {
-		return nil, err
+	if *databaseDSN != "" {
+		if err := pg.ConnectToDB(*databaseDSN); err != nil {
+			return nil, err
+		}
 	}
 
 	// задаем вариант хранения
