@@ -120,11 +120,16 @@ func (s *Store) GetGaugeMetrics(ctx context.Context) (map[string]float64, error)
 	if err != nil {
 		return nil, err
 	}
+
 	rows, err := stmt.QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	// не забываем закрыть курсор после завершения работы с данными
 	defer rows.Close()
+
+	// считываем записи
 	for rows.Next() {
 		var idx string
 		var value float64
@@ -133,6 +138,11 @@ func (s *Store) GetGaugeMetrics(ctx context.Context) (map[string]float64, error)
 			return nil, err
 		}
 		gauges[idx] = value
+	}
+
+	// необходимо проверить ошибки уровня курсора
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return gauges, nil
@@ -146,11 +156,16 @@ func (s *Store) GetCounterMetrics(ctx context.Context) (map[string]int64, error)
 	if err != nil {
 		return nil, err
 	}
+
 	rows, err := stmt.QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	// не забываем закрыть курсор после завершения работы с данными
 	defer rows.Close()
+
+	// считываем записи
 	for rows.Next() {
 		var idx string
 		var delta int64
@@ -159,6 +174,11 @@ func (s *Store) GetCounterMetrics(ctx context.Context) (map[string]int64, error)
 			return nil, err
 		}
 		counters[idx] = delta
+	}
+
+	// необходимо проверить ошибки уровня курсора
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return counters, nil
