@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"sync"
 )
@@ -25,7 +26,7 @@ func NewMemStorage() *MemStorage {
 
 // UpdateCounter обновляем поле Counter
 // описываем метод в соответствии с контактном интерфейсного типа StoreRepository
-func (ms *MemStorage) UpdateCounter(name string, value int64) (int64, error) {
+func (ms *MemStorage) UpdateCounter(ctx context.Context, name string, value int64) (int64, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -34,7 +35,7 @@ func (ms *MemStorage) UpdateCounter(name string, value int64) (int64, error) {
 }
 
 // UpdateGauge обновляем поле UpdateGauge
-func (ms *MemStorage) UpdateGauge(name string, value float64) (float64, error) {
+func (ms *MemStorage) UpdateGauge(ctx context.Context, name string, value float64) (float64, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -42,7 +43,7 @@ func (ms *MemStorage) UpdateGauge(name string, value float64) (float64, error) {
 	return float64(ms.Gauge[name]), nil
 }
 
-func (ms *MemStorage) GetCounter(metric string) (int64, error) {
+func (ms *MemStorage) GetCounter(ctx context.Context, metric string) (int64, error) {
 	value, ok := ms.Counter[metric]
 	if !ok {
 		return 0, fmt.Errorf("%s does not exists", metric)
@@ -50,7 +51,7 @@ func (ms *MemStorage) GetCounter(metric string) (int64, error) {
 	return int64(value), nil
 }
 
-func (ms *MemStorage) GetGauge(metric string) (float64, error) {
+func (ms *MemStorage) GetGauge(ctx context.Context, metric string) (float64, error) {
 	value, ok := ms.Gauge[metric]
 	if !ok {
 		return 0, fmt.Errorf("%s does not exists", metric)
@@ -58,7 +59,7 @@ func (ms *MemStorage) GetGauge(metric string) (float64, error) {
 	return float64(value), nil
 }
 
-func (ms *MemStorage) GetAllMetrics() (map[string]interface{}, error) {
+func (ms *MemStorage) GetAllMetrics(ctx context.Context) (map[string]interface{}, error) {
 	all := make(map[string]interface{}, 30)
 	all["counter"] = ms.Counter
 	all["gauge"] = ms.Gauge

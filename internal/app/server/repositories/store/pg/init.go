@@ -1,12 +1,93 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
 )
 
-var DB *sql.DB
+// Bootstrap подготавливает БД к работе, создавая необходимые таблицы и индексы
+func Bootstrap(ctx context.Context, conn *sql.DB) error {
+	// запускаем транзакцию
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// в случае неуспешного коммита все изменения транзакции будут отменены
+	defer tx.Rollback()
+
+	// создаем схему
+	tx.ExecContext(ctx, `CREATE SCHEMA IF NOT EXISTS metrics`)
+	tx.ExecContext(ctx, `SET search_path TO metrics`)
+
+	// создаём таблицу counter и необходимые индексы
+	tx.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS counters (
+			id BIGSERIAL PRIMARY KEY,
+			name VARCHAR(50) NOT NULL,
+			delta BIGINT NOT NULL,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+		)
+	`)
+	tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS metric_idx ON counters (name)`)
+
+	// создаём таблицу counter и необходимые индексы
+	tx.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS gauges (
+			id BIGSERIAL PRIMARY KEY,
+			name VARCHAR(50) NOT NULL,
+			value DOUBLE PRECISION NOT NULL,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+		)
+	`)
+	tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS gauge_idx ON gauges (name)`)
+
+	// триггер для поля updated_at
+	tx.ExecContext(ctx, `
+		CREATE OR REPLACE FUNCTION updated_at()
+		RETURNS TRIGGER AS $$
+		BEGIN
+			NEW.updated_at = now();
+			RETURN NEW;
+		END;
+		$$ language 'plpgsql';
+	`)
+	tx.ExecContext(ctx, `
+		DO
+		$$BEGIN
+			CREATE TRIGGER gauges_updated_at
+				BEFORE UPDATE
+				ON
+					metrics.gauges
+				FOR EACH ROW
+			EXECUTE PROCEDURE updated_at();
+		EXCEPTION
+		   WHEN duplicate_object THEN
+			  NULL;
+		END;$$;
+	`)
+	tx.ExecContext(ctx, `
+		DO
+		$$BEGIN
+			CREATE TRIGGER counters_updated_at
+				BEFORE UPDATE
+				ON
+					metrics.counters
+				FOR EACH ROW
+			EXECUTE PROCEDURE updated_at();
+		EXCEPTION
+		   WHEN duplicate_object THEN
+			  NULL;
+		END;$$;
+	`)
+
+	// коммитим транзакцию
+	return tx.Commit()
+}
 
 func OpenDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dsn)
@@ -22,14 +103,14 @@ func OpenDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-func ConnectToDB(dsn string) (err error) {
-	DB, err = OpenDB(dsn)
+func ConnectToDB(dsn string) (*sql.DB, error) {
+	connection, err := OpenDB(dsn)
 	if err != nil {
 		logger.Log.Errorln("Postgres not yet ready...")
-		return err
+		return nil, err
 	}
 
 	logger.Log.Infoln("Connected to Postgres")
 
-	return nil
+	return connection, nil
 }

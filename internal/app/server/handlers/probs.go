@@ -7,7 +7,7 @@ import (
 )
 
 func (m *Repository) PingPostgreSQL(w http.ResponseWriter, _ *http.Request) {
-	err := pg.DB.Ping()
+	err := pg.DB.Conn.Ping()
 	if err != nil {
 		logger.Log.Errorln("failed to ping PostgreSQL, PingPostgreSQL() = ", err)
 		w.WriteHeader(http.StatusInternalServerError)

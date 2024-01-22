@@ -1,10 +1,11 @@
 package file
 
 import (
+	"context"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
 )
 
-func SyncWriter(getAllMetrics func() (map[string]interface{}, error)) error {
+func SyncWriter(ctx context.Context, getAllMetrics func(ctx context.Context) (map[string]interface{}, error)) error {
 	// пустое значение отключает функцию записи на диск
 	if Recorder.StoreFilePath == "" {
 		return nil
@@ -15,7 +16,7 @@ func SyncWriter(getAllMetrics func() (map[string]interface{}, error)) error {
 		return nil
 	}
 
-	res, err := getAllMetrics()
+	res, err := getAllMetrics(ctx)
 	if err != nil {
 		logger.Log.Errorln("failed to get the data from storage, GetAllMetrics() = ", err)
 	}

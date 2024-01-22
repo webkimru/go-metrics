@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"flag"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/file"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/handlers"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store/pg"
 	"log"
@@ -13,7 +15,7 @@ import (
 )
 
 // Setup будет полезна при инициализации зависимостей сервера перед запуском
-func Setup() (*string, error) {
+func Setup(ctx context.Context) (*string, error) {
 
 	// указываем имя флага, значение по умолчанию и описание
 	serverAddress := flag.String("a", "localhost:8080", "server address")
@@ -61,29 +63,39 @@ func Setup() (*string, error) {
 		return nil, err
 	}
 
-	// инициализируем работу с PostgreSQL
-	if *databaseDSN != "" {
-		if err := pg.ConnectToDB(*databaseDSN); err != nil {
-			return nil, err
-		}
-	}
-
-	// задаем вариант хранения
-	memStorage := store.NewMemStorage()
-	// загружать ранее сохранённые значения из указанного файла при старте сервера
-	if *storeRestore {
-		res, err := file.Reader()
+	// задаем варианты хранения
+	var storage repositories.StoreRepository
+	switch {
+	case *databaseDSN != "": // DB
+		conn, err := pg.ConnectToDB(*databaseDSN)
 		if err != nil {
-			return nil, err
+			log.Fatal(err)
 		}
-		// если не пустой файл
-		if res != nil {
-			memStorage.Counter = res.Counter
-			memStorage.Gauge = res.Gauge
+		if err := pg.Bootstrap(ctx, conn); err != nil {
+			log.Fatal(err)
 		}
+		db := pg.NewStore(conn)
+		pg.DB = db
+		storage = db
+
+	default: // in memory
+		storage := store.NewMemStorage()
+		// загружать ранее сохранённые значения из указанного файла при старте сервера
+		if *storeRestore {
+			res, err := file.Reader()
+			if err != nil {
+				return nil, err
+			}
+			// если не пустой файл
+			if res != nil {
+				storage.Counter = res.Counter
+				storage.Gauge = res.Gauge
+			}
+		}
+
 	}
 	// инициализируем репозиторий хендлеров с указанным вариантом хранения
-	repo := handlers.NewRepo(memStorage)
+	repo := handlers.NewRepo(storage)
 	// инициализвруем хендлеры для работы с репозиторием
 	handlers.NewHandlers(repo)
 
