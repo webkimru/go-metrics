@@ -2,6 +2,7 @@ package agent
 
 import (
 	"flag"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
 	"log"
 	"os"
 	"strconv"
@@ -38,6 +39,11 @@ func Setup() (ServerAddress, ReportInterval, PollInterval, error) {
 			log.Fatal(err)
 		}
 		pollInterval = &pi
+	}
+
+	// инициализируем логер
+	if err := logger.Initialize("info"); err != nil {
+		return nil, nil, nil, err
 	}
 
 	return serverAddress, reportInterval, pollInterval, nil

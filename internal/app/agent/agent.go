@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
-	"log"
 	"math/rand"
 	"net/http"
 	"reflect"
@@ -56,6 +56,7 @@ func GetMetric(m *metrics.Metric, pollInterval int) {
 }
 
 func SendMetric(metric metrics.Metric, path string) {
+	var metricSlice []metrics.RequestMetric
 
 	val := reflect.ValueOf(&metric)
 	val = val.Elem()
@@ -65,59 +66,28 @@ func SendMetric(metric metrics.Metric, path string) {
 
 		switch f.Kind() {
 		case reflect.Int64:
-			go func(fieldIndex int) {
-				err := SendCounterJSON(fmt.Sprintf("http://%s/update/", path), val.Type().Field(fieldIndex).Name, field.Int())
-				if err != nil {
-					log.Println(err)
-				}
-
-			}(fieldIndex)
+			metricSlice = append(metricSlice, metrics.RequestMetric{
+				ID:    val.Type().Field(fieldIndex).Name,
+				MType: "counter",
+				Delta: field.Int(),
+			})
 
 		case reflect.Float64:
-			go func(fieldIndex int) {
-				err := SendGaugeJSON(fmt.Sprintf("http://%s/update/", path), val.Type().Field(fieldIndex).Name, field.Float())
-				if err != nil {
-					log.Println(err)
-				}
-			}(fieldIndex)
+			metricSlice = append(metricSlice, metrics.RequestMetric{
+				ID:    val.Type().Field(fieldIndex).Name,
+				MType: "gauge",
+				Value: field.Float(),
+			})
 		}
 	}
-}
 
-func SendCounterJSON(url string, metric string, value int64) error {
-	request := struct {
-		ID    string `json:"id"`
-		MType string `json:"type"`
-		Delta int64  `json:"delta"`
-	}{
-		ID:    metric,
-		MType: "counter",
-		Delta: value,
-	}
-
-	if err := Send(url, request); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func SendGaugeJSON(url string, metric string, value float64) error {
-	request := struct {
-		ID    string  `json:"id"`
-		MType string  `json:"type"`
-		Value float64 `json:"value"`
-	}{
-		ID:    metric,
-		MType: "gauge",
-		Value: value,
-	}
-
-	if err := Send(url, request); err != nil {
-		return err
-	}
-
-	return nil
+	go func() {
+		err := Send(fmt.Sprintf("http://%s/updates/", path), metricSlice)
+		if err != nil {
+			logger.Log.Error(err)
+			return
+		}
+	}()
 }
 
 func Send(url string, request interface{}) error {

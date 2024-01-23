@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/models"
 	"sync"
 )
 
@@ -65,4 +66,18 @@ func (ms *MemStorage) GetAllMetrics(ctx context.Context) (map[string]interface{}
 	all["gauge"] = ms.Gauge
 
 	return all, nil
+}
+
+func (ms *MemStorage) UpdateBatchMetrics(ctx context.Context, metrics []models.Metrics) error {
+	for i := range metrics {
+		switch metrics[i].MType {
+		case "gauge":
+			ms.Gauge[metrics[i].ID] = Gauge(*metrics[i].Value)
+
+		case "counter":
+			ms.Counter[metrics[i].ID] += Counter(*metrics[i].Delta)
+		}
+	}
+
+	return nil
 }

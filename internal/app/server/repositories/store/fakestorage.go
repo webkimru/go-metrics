@@ -1,6 +1,9 @@
 package store
 
-import "context"
+import (
+	"context"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/models"
+)
 
 type FakeStorage struct{}
 
@@ -27,4 +30,8 @@ func (f *FakeStorage) GetGauge(_ context.Context, _ string) (float64, error) {
 
 func (f *FakeStorage) GetAllMetrics(_ context.Context) (map[string]interface{}, error) {
 	return nil, nil
+}
+
+func (f *FakeStorage) UpdateBatchMetrics(_ context.Context, _ []models.Metrics) error {
+	return nil
 }

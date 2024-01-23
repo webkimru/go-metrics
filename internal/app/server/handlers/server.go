@@ -116,7 +116,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		metrics.Value = &res
 		// Сохранение данных в файл
 		if err := file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
-			logger.Log.Errorln("failed to write the data to the file, WriteFile() =", err)
+			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -137,7 +137,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		metrics.Delta = &res
 		// Сохранение данных в файл
 		if err := file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
-			logger.Log.Errorln("failed to write the data to the file, WriteFile() =", err)
+			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -243,4 +243,37 @@ func (m *Repository) WriteResponseGauge(w http.ResponseWriter, r *http.Request, 
 	}
 
 	return nil
+}
+
+func (m *Repository) PostBatchMetrics(w http.ResponseWriter, r *http.Request) {
+	var metrics []models.Metrics
+
+	// application/json
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
+		// приняли даныне по http в metrics
+		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// обновляем данные в хранилище
+		err := m.Store.UpdateBatchMetrics(r.Context(), metrics)
+		if err != nil {
+			logger.Log.Errorln("failed to update the data from storage, UpdateBatchMetrics() = ", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Сохранение данных в файл
+		if err = file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+	}
 }

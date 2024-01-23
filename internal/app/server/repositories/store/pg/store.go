@@ -3,6 +3,8 @@ package pg
 import (
 	"context"
 	"database/sql"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/models"
 )
 
 var DB *Store
@@ -37,6 +39,7 @@ func (s *Store) UpdateCounter(ctx context.Context, name string, value int64) (in
 
 	return res, nil
 }
+
 func (s *Store) UpdateGauge(ctx context.Context, name string, value float64) (float64, error) {
 	stmt, err := s.Conn.PrepareContext(ctx, `
 		INSERT INTO metrics.gauges (name, value) VALUES($1, $2)
@@ -56,6 +59,7 @@ func (s *Store) UpdateGauge(ctx context.Context, name string, value float64) (fl
 
 	return res, nil
 }
+
 func (s *Store) GetCounter(ctx context.Context, metric string) (int64, error) {
 	stmt, err := s.Conn.PrepareContext(ctx, `
 		SELECT delta FROM metrics.counters
@@ -74,6 +78,7 @@ func (s *Store) GetCounter(ctx context.Context, metric string) (int64, error) {
 
 	return res, nil
 }
+
 func (s *Store) GetGauge(ctx context.Context, metric string) (float64, error) {
 	stmt, err := s.Conn.PrepareContext(ctx, `
 		SELECT value FROM metrics.gauges
@@ -92,6 +97,7 @@ func (s *Store) GetGauge(ctx context.Context, metric string) (float64, error) {
 
 	return res, nil
 }
+
 func (s *Store) GetAllMetrics(ctx context.Context) (map[string]interface{}, error) {
 	all := make(map[string]interface{}, 30)
 
@@ -182,4 +188,39 @@ func (s *Store) GetCounterMetrics(ctx context.Context) (map[string]int64, error)
 	}
 
 	return counters, nil
+}
+
+func (s *Store) UpdateBatchMetrics(ctx context.Context, metrics []models.Metrics) error {
+	tx, err := s.Conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	for i := range metrics {
+		switch metrics[i].MType {
+		case "gauge":
+			_, err = tx.ExecContext(ctx, `
+				INSERT INTO metrics.gauges (name, value) VALUES($1, $2)
+					ON CONFLICT (name) DO
+						UPDATE SET value = $2 RETURNING value
+			`, metrics[i].ID, metrics[i].Value)
+			if err != nil {
+				logger.Log.Errorln(err)
+			}
+
+		case "counter":
+			_, err = tx.ExecContext(ctx, `
+				INSERT INTO metrics.counters (name, delta) VALUES($1, $2)
+					ON CONFLICT (name) DO
+						UPDATE SET delta = metrics.counters.delta + $2 RETURNING delta
+			`, metrics[i].ID, metrics[i].Delta)
+			if err != nil {
+				logger.Log.Errorln(err)
+			}
+		}
+	}
+
+	return tx.Commit()
 }
