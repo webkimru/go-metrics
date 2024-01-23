@@ -2,17 +2,23 @@ package file
 
 import (
 	"context"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
 )
 
 func SyncWriter(ctx context.Context, getAllMetrics func(ctx context.Context) (map[string]interface{}, error)) error {
+	// Если используется база данных в качестве хранилища, то ничего не делаем
+	if app.StorePriority == config.Database {
+		return nil
+	}
+
 	// пустое значение отключает функцию записи на диск
-	if Recorder.StoreFilePath == "" {
+	if app.FileStore.FilePath == "" {
 		return nil
 	}
 
 	// значение 0 делает запись синхронной
-	if Recorder.StoreInterval > 0 {
+	if app.FileStore.Interval > 0 {
 		return nil
 	}
 
@@ -22,7 +28,7 @@ func SyncWriter(ctx context.Context, getAllMetrics func(ctx context.Context) (ma
 	}
 
 	// записываем в файл
-	producer, err := NewProducer(Recorder.StoreFilePath)
+	producer, err := NewProducer(app.FileStore.FilePath)
 	if err != nil {
 		return err
 	}
@@ -36,7 +42,7 @@ func SyncWriter(ctx context.Context, getAllMetrics func(ctx context.Context) (ma
 
 func Reader() (*StructFile, error) {
 	// читаем из файла
-	consumer, err := NewConsumer(Recorder.StoreFilePath)
+	consumer, err := NewConsumer(app.FileStore.FilePath)
 	if err != nil {
 		return nil, err
 	}

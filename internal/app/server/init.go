@@ -3,16 +3,19 @@ package server
 import (
 	"context"
 	"flag"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/file"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/file/async"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/handlers"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
-	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store/pg"
 	"log"
 	"os"
 	"strconv"
 )
+
+var app config.AppConfig
 
 // Setup будет полезна при инициализации зависимостей сервера перед запуском
 func Setup(ctx context.Context) (*string, error) {
@@ -58,15 +61,33 @@ func Setup(ctx context.Context) (*string, error) {
 		return nil, err
 	}
 
+	// конфигурация приложения
+	a := config.AppConfig{
+		FileStore: config.RecorderConfig{
+			Interval: *storeInterval,
+			Restore:  *storeRestore,
+			FilePath: *storeFilePath,
+		},
+	}
+	app = a
+
 	// инициализируем хранение метрик в файле
-	if err := file.Initialize(*storeInterval, *storeFilePath, *storeRestore); err != nil {
+	if err := file.Initialize(&app); err != nil {
+		return nil, err
+	}
+	if err := async.WriterInitialize(&app); err != nil {
 		return nil, err
 	}
 
 	// задаем варианты хранения
-	var storage repositories.StoreRepository
+	// 1 - DB
+	// 2 - File
+	// 3 - Memory
+	var storePriority config.Store
+	var repo *handlers.Repository
 	switch {
 	case *databaseDSN != "": // DB
+		storePriority = config.Database
 		conn, err := pg.ConnectToDB(*databaseDSN)
 		if err != nil {
 			log.Fatal(err)
@@ -76,9 +97,11 @@ func Setup(ctx context.Context) (*string, error) {
 		}
 		db := pg.NewStore(conn)
 		pg.DB = db
-		storage = db
+		storage := db
+		repo = handlers.NewRepo(storage)
 
 	default: // in memory
+		storePriority = config.Memory
 		storage := store.NewMemStorage()
 		// загружать ранее сохранённые значения из указанного файла при старте сервера
 		if *storeRestore {
@@ -92,12 +115,21 @@ func Setup(ctx context.Context) (*string, error) {
 				storage.Gauge = res.Gauge
 			}
 		}
-
+		// инициализируем репозиторий хендлеров с указанным вариантом хранения
+		repo = handlers.NewRepo(storage)
 	}
-	// инициализируем репозиторий хендлеров с указанным вариантом хранения
-	repo := handlers.NewRepo(storage)
+
+	// запоминаем вариант хранения
+	app.StorePriority = storePriority
+
 	// инициализвруем хендлеры для работы с репозиторием
-	handlers.NewHandlers(repo)
+	handlers.NewHandlers(repo, &app)
 
 	return serverAddress, nil
+}
+
+func ShutdownDB() {
+	if app.StorePriority == config.Database {
+		pg.DB.Conn.Close()
+	}
 }

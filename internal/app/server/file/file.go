@@ -3,28 +3,20 @@ package file
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/webkimru/go-yandex-metrics/internal/app/server/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 	"os"
 )
 
-var Recorder recorder
+var app *config.AppConfig
 
 type StructFile struct {
 	Counter map[string]store.Counter
 	Gauge   map[string]store.Gauge
 }
 
-type recorder struct {
-	StoreInterval int
-	StoreRestore  bool
-	StoreFilePath string
-}
-
-func Initialize(storeInterval int, storeFilePath string, storeRestore bool) error {
-
-	Recorder.StoreInterval = storeInterval
-	Recorder.StoreFilePath = storeFilePath
-	Recorder.StoreRestore = storeRestore
+func Initialize(a *config.AppConfig) error {
+	app = a
 
 	return nil
 }
