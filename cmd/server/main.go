@@ -37,6 +37,7 @@ func main() {
 	async.FileWriter(ctx)
 
 	// стартуем сервер
+	logger.Log.Infof("Starting metric server on %s", *serverAddress)
 	err = http.ListenAndServe(*serverAddress, server.Routes())
 	if err != nil {
 		panic(err)

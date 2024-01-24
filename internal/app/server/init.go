@@ -61,6 +61,15 @@ func Setup(ctx context.Context) (*string, error) {
 		return nil, err
 	}
 
+	logger.Log.Infoln(
+		"Starting configuration:",
+		"ADDRESS", *serverAddress,
+		"STORE_INTERVAL", *storeInterval,
+		"FILE_STORAGE_PATH", *storeFilePath,
+		"RESTORE", *storeRestore,
+		"DATABASE_DSN", *databaseDSN,
+	)
+
 	// конфигурация приложения
 	a := config.AppConfig{
 		FileStore: config.RecorderConfig{

@@ -46,5 +46,12 @@ func Setup() (ServerAddress, ReportInterval, PollInterval, error) {
 		return nil, nil, nil, err
 	}
 
+	logger.Log.Infoln(
+		"Starting configuration:",
+		"ADDRESS", *serverAddress,
+		"REPORT_INTERVAL", *reportInterval,
+		"POLL_INTERVAL", *pollInterval,
+	)
+
 	return serverAddress, reportInterval, pollInterval, nil
 }
