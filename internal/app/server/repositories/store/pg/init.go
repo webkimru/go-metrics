@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
+	"time"
 )
 
 // Bootstrap подготавливает БД к работе, создавая необходимые таблицы и индексы
@@ -104,13 +105,29 @@ func OpenDB(dsn string) (*sql.DB, error) {
 }
 
 func ConnectToDB(dsn string) (*sql.DB, error) {
-	connection, err := OpenDB(dsn)
-	if err != nil {
-		logger.Log.Errorln("Postgres not yet ready...")
-		return nil, err
+	// ретраи на переподключени к базе при старте
+	// 1s, 3s, 5s
+	backoff := [3]int{1, 3, 5}
+	var cnt = 0
+
+	for {
+		connection, err := OpenDB(dsn)
+		if err != nil {
+			logger.Log.Infoln("Postgres not yet ready...")
+			cnt++
+		} else {
+			logger.Log.Infoln("Connected to Postgres")
+			return connection, nil
+		}
+
+		if cnt > 3 {
+			logger.Log.Errorf("Shutdown after 3 attempts to connect to the database: %v", err)
+			return nil, err
+		}
+
+		logger.Log.Infof("Backing off for %d seconds...", backoff[cnt-1])
+		time.Sleep(time.Duration(backoff[cnt-1]) * time.Second)
+
+		continue
 	}
-
-	logger.Log.Infoln("Connected to Postgres")
-
-	return connection, nil
 }
