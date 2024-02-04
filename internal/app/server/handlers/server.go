@@ -20,7 +20,7 @@ const (
 )
 
 // Default задет дефолтный маршрут
-func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
+func (m *Repository) Default(w http.ResponseWriter, r *http.Request) {
 	stringHTML := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,7 +39,7 @@ func (m *Repository) Default(w http.ResponseWriter, _ *http.Request) {
 </html>
 `
 
-	res, err := m.Store.GetAllMetrics()
+	res, err := m.Store.GetAllMetrics(r.Context())
 	if err != nil {
 		logger.Log.Errorln("failed to get the data from storage, GetAllMetrics() = ", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -107,7 +107,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	switch metrics.MType {
 	case Gauge:
 		// Обновление данных в хранилище
-		res, err := m.Store.UpdateGauge(metrics.ID, *metrics.Value)
+		res, err := m.Store.UpdateGauge(r.Context(), metrics.ID, *metrics.Value)
 		if err != nil {
 			logger.Log.Errorln("failed to update the data from storage, UpdateGauge() = ", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -115,8 +115,8 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 		metrics.Value = &res
 		// Сохранение данных в файл
-		if err := file.SyncWriter(m.Store.GetAllMetrics); err != nil {
-			logger.Log.Errorln("failed to write the data to the file, WriteFile() =", err)
+		if err := file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -128,7 +128,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 	case Counter:
 		// Обновление данных в хранилище
-		res, err := m.Store.UpdateCounter(metrics.ID, *metrics.Delta)
+		res, err := m.Store.UpdateCounter(r.Context(), metrics.ID, *metrics.Delta)
 		if err != nil {
 			logger.Log.Errorln("failed to update the data from storage, UpdateCounter() = ", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -136,8 +136,8 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 		metrics.Delta = &res
 		// Сохранение данных в файл
-		if err := file.SyncWriter(m.Store.GetAllMetrics); err != nil {
-			logger.Log.Errorln("failed to write the data to the file, WriteFile() =", err)
+		if err := file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -168,7 +168,7 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 
 	switch metrics.MType {
 	case Counter:
-		res, err := m.Store.GetCounter(metrics.ID)
+		res, err := m.Store.GetCounter(r.Context(), metrics.ID)
 		if err != nil {
 			logger.Log.Infoln("failed to get the data from storage, GetCounter() = ", err)
 			w.WriteHeader(http.StatusNotFound)
@@ -182,7 +182,7 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case Gauge:
-		res, err := m.Store.GetGauge(metrics.ID)
+		res, err := m.Store.GetGauge(r.Context(), metrics.ID)
 		if err != nil {
 			logger.Log.Infoln("failed to get the data from storage, GetGauge() = ", err)
 			w.WriteHeader(http.StatusNotFound)
@@ -243,4 +243,37 @@ func (m *Repository) WriteResponseGauge(w http.ResponseWriter, r *http.Request, 
 	}
 
 	return nil
+}
+
+func (m *Repository) PostBatchMetrics(w http.ResponseWriter, r *http.Request) {
+	var metrics []models.Metrics
+
+	// application/json
+	if r.Header.Get("Content-Type") == ContentTypeJSON {
+		// приняли даныне по http в metrics
+		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// обновляем данные в хранилище
+		err := m.Store.UpdateBatchMetrics(r.Context(), metrics)
+		if err != nil {
+			logger.Log.Errorln("failed to update the data from storage, UpdateBatchMetrics() = ", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Сохранение данных в файл
+		if err = file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
+			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+	}
 }

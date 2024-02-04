@@ -22,8 +22,14 @@ func Routes() http.Handler {
 	})
 	// application/json
 	r.Group(func(r chi.Router) {
+		r.Post("/updates/", handlers.Repo.PostBatchMetrics)
 		r.Post("/update/", handlers.Repo.PostMetrics)
 		r.Post("/value/", handlers.Repo.GetMetric)
+	})
+	// ping PostgreSQL
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.TextPlain)
+		r.Get("/ping", handlers.Repo.PingPostgreSQL)
 	})
 
 	return r
