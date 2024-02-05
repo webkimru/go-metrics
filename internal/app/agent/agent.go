@@ -85,7 +85,6 @@ func SendMetric(metric metrics.Metric, path string) {
 		err := Send(fmt.Sprintf("http://%s/updates/", path), metricSlice)
 		if err != nil {
 			logger.Log.Error(err)
-			return
 		}
 	}()
 }
