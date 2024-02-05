@@ -60,6 +60,7 @@ func Setup() (*int, error) {
 		"ADDRESS", app.ServerAddress,
 		"REPORT_INTERVAL", app.ReportInterval,
 		"POLL_INTERVAL", app.PollInterval,
+		"KEY", app.SecretKey,
 	)
 
 	return &app.ReportInterval, nil

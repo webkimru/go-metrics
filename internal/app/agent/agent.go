@@ -2,6 +2,8 @@ package agent
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/config"
@@ -97,17 +99,25 @@ func Send(url string, request interface{}) error {
 		return fmt.Errorf("failed to marshal request=%v", request)
 	}
 
-	b, err := Compress(data)
-	if err != nil {
+	// Compress data
+	if err := Compress(&data); err != nil {
 		return fmt.Errorf("failed Compress()=%v", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
+	// Encrypt data
+	if app.SecretKey != "" {
+		// подписываем алгоритмом HMAC, используя SHA-256
+		h := hmac.New(sha256.New, []byte(app.SecretKey))
+		h.Write(data)
+		sign := h.Sum(nil)
+		req.Header.Set("HashSHA256", string(sign))
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
