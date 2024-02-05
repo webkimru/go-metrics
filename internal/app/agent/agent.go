@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 	"math/rand"
@@ -14,9 +15,10 @@ import (
 )
 
 var rt runtime.MemStats
+var app config.AppConfig
 
-func GetMetric(m *metrics.Metric, pollInterval int) {
-	pollDuration := time.Duration(pollInterval) * time.Second
+func GetMetric(m *metrics.Metric) {
+	pollDuration := time.Duration(app.PollInterval) * time.Second
 
 	for {
 		runtime.ReadMemStats(&rt)
@@ -55,7 +57,7 @@ func GetMetric(m *metrics.Metric, pollInterval int) {
 	}
 }
 
-func SendMetric(metric metrics.Metric, path string) {
+func SendMetric(metric metrics.Metric) {
 	var metricSlice []metrics.RequestMetric
 
 	val := reflect.ValueOf(&metric)
@@ -82,7 +84,7 @@ func SendMetric(metric metrics.Metric, path string) {
 	}
 
 	go func() {
-		err := Send(fmt.Sprintf("http://%s/updates/", path), metricSlice)
+		err := Send(fmt.Sprintf("http://%s/updates/", app.ServerAddress), metricSlice)
 		if err != nil {
 			logger.Log.Error(err)
 		}
