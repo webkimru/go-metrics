@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/config"
@@ -116,7 +117,7 @@ func Send(url string, request interface{}) error {
 		h := hmac.New(sha256.New, []byte(app.SecretKey))
 		h.Write(data)
 		sign := h.Sum(nil)
-		req.Header.Set("HashSHA256", string(sign))
+		req.Header.Set("HashSHA256", hex.EncodeToString(sign))
 	}
 
 	client := &http.Client{}
