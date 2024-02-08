@@ -5,4 +5,5 @@ type AppConfig struct {
 	ReportInterval int
 	PollInterval   int
 	SecretKey      string
+	RateLimit      int
 }
