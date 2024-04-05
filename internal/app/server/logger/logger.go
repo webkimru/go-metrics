@@ -1,10 +1,20 @@
 package logger
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+	"log"
+)
 
 // Log будет доступен всему коду как синглтон.
 // Никакой код навыка, кроме функции InitLogger, не должен модифицировать эту переменную.
 var Log *zap.SugaredLogger
+
+func init() {
+	// инициализируем логер
+	if err := Initialize("info"); err != nil {
+		log.Fatal("Не удалось инициализировать логер")
+	}
+}
 
 // Initialize инициализирует синглтон логера с необходимым уровнем логирования.
 func Initialize(level string) error {
