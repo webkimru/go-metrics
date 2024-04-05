@@ -19,7 +19,7 @@ const (
 	ContentTypeJSON = "application/json"
 )
 
-// Default задет дефолтный маршрут
+// Default выдает список всех метрик и их значения в HTML.
 func (m *Repository) Default(w http.ResponseWriter, r *http.Request) {
 	stringHTML := `<!DOCTYPE html>
 <html lang="en">
@@ -64,7 +64,7 @@ func (m *Repository) Default(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PostMetrics обрабатывае входящие метрики
+// PostMetrics обрабатывает входящие метрики.
 func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 	// application/json
@@ -106,7 +106,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	// При попытке передать запрос с некорректным значением возвращать `http.StatusBadRequest`.
 	switch metrics.MType {
 	case Gauge:
-		// Обновление данных в хранилище
+		// Обновление данных в хранилище.
 		res, err := m.Store.UpdateGauge(r.Context(), metrics.ID, *metrics.Value)
 		if err != nil {
 			logger.Log.Errorln("failed to update the data from storage, UpdateGauge() = ", err)
@@ -114,20 +114,20 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		metrics.Value = &res
-		// Сохранение данных в файл
+		// Сохранение данных в файл.
 		if err := file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
 			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		// Ответ клиенту
+		// Ответ клиенту.
 		if err := m.WriteResponseGauge(w, r, metrics); err != nil {
 			logger.Log.Errorln("failed to write the data to the connection, WriteResponseGauge() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
 	case Counter:
-		// Обновление данных в хранилище
+		// Обновление данных в хранилище.
 		res, err := m.Store.UpdateCounter(r.Context(), metrics.ID, *metrics.Delta)
 		if err != nil {
 			logger.Log.Errorln("failed to update the data from storage, UpdateCounter() = ", err)
@@ -135,13 +135,13 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		metrics.Delta = &res
-		// Сохранение данных в файл
+		// Сохранение данных в файл.
 		if err := file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
 			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		// Ответ клиенту
+		// Ответ клиенту.
 		if err := m.WriteResponseCounter(w, r, metrics); err != nil {
 			logger.Log.Errorln("failed to write the data to the connection, WriteResponseCounter() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -152,6 +152,7 @@ func (m *Repository) PostMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetMetric выдает данные по запрашиваемой метрике.
 func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 	// application/json
@@ -201,6 +202,7 @@ func (m *Repository) GetMetric(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// WriteResponseCounter отдает кдиенту данные и статус по счетчику Counter.
 func (m *Repository) WriteResponseCounter(w http.ResponseWriter, r *http.Request, metrics models.Metrics) error {
 	// application/json
 	if r.Header.Get("Content-Type") == ContentTypeJSON {
@@ -223,6 +225,7 @@ func (m *Repository) WriteResponseCounter(w http.ResponseWriter, r *http.Request
 	return nil
 }
 
+// WriteResponseGauge отдает клиенту данные и статус по счетчику Gauge.
 func (m *Repository) WriteResponseGauge(w http.ResponseWriter, r *http.Request, metrics models.Metrics) error {
 	// application/json
 	if r.Header.Get("Content-Type") == ContentTypeJSON {
@@ -245,18 +248,19 @@ func (m *Repository) WriteResponseGauge(w http.ResponseWriter, r *http.Request, 
 	return nil
 }
 
+// PostBatchMetrics обрабатывает входящие батчи данных с метриками.
 func (m *Repository) PostBatchMetrics(w http.ResponseWriter, r *http.Request) {
 	var metrics []models.Metrics
 
 	// application/json
 	if r.Header.Get("Content-Type") == ContentTypeJSON {
-		// приняли даныне по http в metrics
+		// Приняли даныне по http в metrics.
 		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		// обновляем данные в хранилище
+		// Обновляем данные в хранилище.
 		err := m.Store.UpdateBatchMetrics(r.Context(), metrics)
 		if err != nil {
 			logger.Log.Errorln("failed to update the data from storage, UpdateBatchMetrics() = ", err)
@@ -264,7 +268,7 @@ func (m *Repository) PostBatchMetrics(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Сохранение данных в файл
+		// Сохранение данных в файл.
 		if err = file.SyncWriter(r.Context(), m.Store.GetAllMetrics); err != nil {
 			logger.Log.Errorln("failed to write the data to the file, SyncWriter() =", err)
 			w.WriteHeader(http.StatusInternalServerError)
