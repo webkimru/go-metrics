@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,4 +13,6 @@ func TestMiddleware(t *testing.T) {
 	w := httptest.NewRecorder()
 	h := TextPlain(testHandler)
 	h.ServeHTTP(w, req)
+
+	assert.Equal(t, w.Header().Get("Content-Type"), "text/plain; charset=utf-8")
 }
