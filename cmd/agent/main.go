@@ -2,9 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 	"log"
 	"net/http"
 	_ "net/http/pprof" // подключаем пакет pprof
@@ -12,6 +9,10 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 )
 
 var m metrics.Metric
