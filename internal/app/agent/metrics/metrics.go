@@ -40,9 +40,13 @@ type Metric struct {
 	CPUutilization1 Gauge
 }
 
+//easyjson:json
 type RequestMetric struct {
 	ID    string  `json:"id"`
 	MType string  `json:"type"`
 	Delta int64   `json:"delta"`
 	Value float64 `json:"value"`
 }
+
+//easyjson:json
+type RequestMetricSlice []RequestMetric

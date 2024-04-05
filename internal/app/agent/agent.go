@@ -6,8 +6,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
+	"github.com/mailru/easyjson"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/config"
@@ -173,8 +173,8 @@ func AddMetricsToJob(ctx context.Context, wg *sync.WaitGroup, metric *metrics.Me
 	}
 }
 
-func Send(url string, request interface{}) error {
-	data, err := json.Marshal(request)
+func Send(url string, request metrics.RequestMetricSlice) error {
+	data, err := easyjson.Marshal(request)
 	if err != nil {
 		return fmt.Errorf("failed to marshal request=%v", request)
 	}
