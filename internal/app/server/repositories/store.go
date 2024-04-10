@@ -5,8 +5,8 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/models"
 )
 
-// StoreRepository интерфейс хранилища всего сервиса - контракт
-// ниже описываем, все, что он должен уметь делать - методы
+// StoreRepository интерфейс хранилища всего сервиса - контракт.
+// Ниже описываем, все, что он должен уметь делать - методы.
 type StoreRepository interface {
 	UpdateCounter(ctx context.Context, name string, value int64) (int64, error)
 	UpdateGauge(ctx context.Context, name string, value float64) (float64, error)

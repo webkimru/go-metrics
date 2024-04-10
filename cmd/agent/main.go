@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 	"log"
+	"net/http"
+	_ "net/http/pprof" // подключаем пакет pprof
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 )
 
 var m metrics.Metric
@@ -35,6 +38,13 @@ func main() {
 		logger.Log.Infoln("Shutdown...")
 		wg.Done()
 		cancel()
+	}()
+
+	go func() {
+		err := http.ListenAndServe(":8000", nil)
+		if err != nil {
+			logger.Log.Errorln("ListenAndServe for pprof doesn't work:", err)
+		}
 	}()
 
 	// настраиваем/инициализируем приложение
