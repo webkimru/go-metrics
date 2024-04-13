@@ -9,15 +9,15 @@ const (
 )
 
 type RecorderConfig struct {
+	FilePath string
 	Interval int
 	Restore  bool
-	FilePath string
 }
 
 type AppConfig struct {
 	ServerAddress string
 	SecretKey     string
 	DatabaseDSN   string
-	StorePriority Store
 	FileStore     RecorderConfig
+	StorePriority Store
 }
