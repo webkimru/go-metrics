@@ -180,7 +180,7 @@ func Send(url string, request metrics.RequestMetricSlice) error {
 	}
 
 	// Compress data
-	if err := Compress(&data); err != nil {
+	if err = Compress(&data); err != nil {
 		return fmt.Errorf("failed Compress()=%v", err)
 	}
 
