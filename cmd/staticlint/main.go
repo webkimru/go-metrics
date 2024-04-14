@@ -1,7 +1,9 @@
 package main
 
 import (
-	"github.com/webkimru/go-yandex-metrics/cmd/staticlint/analysis"
+	"encoding/json"
+	custom "github.com/webkimru/go-yandex-metrics/cmd/staticlint/analysis"
+	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/appends"
 	"golang.org/x/tools/go/analysis/passes/asmdecl"
@@ -51,58 +53,151 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unusedresult"
 	"golang.org/x/tools/go/analysis/passes/unusedwrite"
 	"golang.org/x/tools/go/analysis/passes/usesgenerics"
+	"honnef.co/go/tools/staticcheck"
+	"log"
+	"os"
+	"path/filepath"
 )
 
+// Config — имя файла конфигурации.
+const Config = `config.json`
+
+// ConfigData описывает структуру файла конфигурации.
+type ConfigData struct {
+	Staticcheck    []string
+	Analysispasses []string
+}
+
 func main() {
+	appfile, err := os.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(appfile), Config))
+	if err != nil {
+		log.Fatal(err)
+	}
+	var cfg ConfigData
+	if err = json.Unmarshal(data, &cfg); err != nil {
+		log.Fatal(err)
+	}
+
+	mychecks := []*analysis.Analyzer{
+		custom.ExitCheckAnalyzer,
+	}
+	checks := make(map[string]bool)
+	for _, v := range cfg.Staticcheck {
+		checks[v] = true
+	}
+	// Добавляем анализаторы из staticcheck, которые указаны в файле конфигурации
+	for _, v := range staticcheck.Analyzers {
+		if checks[v.Analyzer.Name] {
+			mychecks = append(mychecks, v.Analyzer)
+		}
+	}
+	// Добавляем анализатор из стандартных статических анализаторов пакета `golang.org/x/tools/go/analysis/passes`.
+	for _, v := range cfg.Analysispasses {
+		switch v {
+		case "appends":
+			mychecks = append(mychecks, appends.Analyzer)
+		case "asmdecl":
+			mychecks = append(mychecks, asmdecl.Analyzer)
+		case "assign":
+			mychecks = append(mychecks, assign.Analyzer)
+		case "atomic":
+			mychecks = append(mychecks, atomic.Analyzer)
+		case "atomicalign":
+			mychecks = append(mychecks, atomicalign.Analyzer)
+		case "bools":
+			mychecks = append(mychecks, bools.Analyzer)
+		case "buildssa":
+			mychecks = append(mychecks, buildssa.Analyzer)
+		case "buildtag":
+			mychecks = append(mychecks, buildtag.Analyzer)
+		case "cgocall":
+			mychecks = append(mychecks, cgocall.Analyzer)
+		case "composite":
+			mychecks = append(mychecks, composite.Analyzer)
+		case "copylock":
+			mychecks = append(mychecks, copylock.Analyzer)
+		case "ctrlflow":
+			mychecks = append(mychecks, ctrlflow.Analyzer)
+		case "deepequalerrors":
+			mychecks = append(mychecks, deepequalerrors.Analyzer)
+		case "defers":
+			mychecks = append(mychecks, defers.Analyzer)
+		case "directive":
+			mychecks = append(mychecks, directive.Analyzer)
+		case "errorsas":
+			mychecks = append(mychecks, errorsas.Analyzer)
+		case "fieldalignment":
+			mychecks = append(mychecks, fieldalignment.Analyzer)
+		case "findcall":
+			mychecks = append(mychecks, findcall.Analyzer)
+		case "framepointer":
+			mychecks = append(mychecks, framepointer.Analyzer)
+		case "httpmux":
+			mychecks = append(mychecks, httpmux.Analyzer)
+		case "httpresponse":
+			mychecks = append(mychecks, httpresponse.Analyzer)
+		case "ifaceassert":
+			mychecks = append(mychecks, ifaceassert.Analyzer)
+		case "inspect":
+			mychecks = append(mychecks, inspect.Analyzer)
+		case "loopclosure":
+			mychecks = append(mychecks, loopclosure.Analyzer)
+		case "lostcancel":
+			mychecks = append(mychecks, lostcancel.Analyzer)
+		case "nilfunc":
+			mychecks = append(mychecks, nilfunc.Analyzer)
+		case "nilness":
+			mychecks = append(mychecks, nilness.Analyzer)
+		case "pkgfact":
+			mychecks = append(mychecks, pkgfact.Analyzer)
+		case "printf":
+			mychecks = append(mychecks, printf.Analyzer)
+		case "reflectvaluecompare":
+			mychecks = append(mychecks, reflectvaluecompare.Analyzer)
+		case "shadow":
+			mychecks = append(mychecks, shadow.Analyzer)
+		case "shift":
+			mychecks = append(mychecks, shift.Analyzer)
+		case "sigchanyzer":
+			mychecks = append(mychecks, sigchanyzer.Analyzer)
+		case "slog":
+			mychecks = append(mychecks, slog.Analyzer)
+		case "sortslice":
+			mychecks = append(mychecks, sortslice.Analyzer)
+		case "stdmethods":
+			mychecks = append(mychecks, stdmethods.Analyzer)
+		case "stdversion":
+			mychecks = append(mychecks, stdversion.Analyzer)
+		case "stringintconv":
+			mychecks = append(mychecks, stringintconv.Analyzer)
+		case "structtag":
+			mychecks = append(mychecks, structtag.Analyzer)
+		case "testinggoroutine":
+			mychecks = append(mychecks, testinggoroutine.Analyzer)
+		case "tests":
+			mychecks = append(mychecks, tests.Analyzer)
+		case "timeformat":
+			mychecks = append(mychecks, timeformat.Analyzer)
+		case "unmarshal":
+			mychecks = append(mychecks, unmarshal.Analyzer)
+		case "unreachable":
+			mychecks = append(mychecks, unreachable.Analyzer)
+		case "unsafeptr":
+			mychecks = append(mychecks, unsafeptr.Analyzer)
+		case "unusedresult":
+			mychecks = append(mychecks, unusedresult.Analyzer)
+		case "unusedwrite":
+			mychecks = append(mychecks, unusedwrite.Analyzer)
+		case "usesgenerics":
+			mychecks = append(mychecks, usesgenerics.Analyzer)
+		}
+	}
+
 	multichecker.Main(
-		analysis.ExitCheckAnalyzer,
-		appends.Analyzer,
-		asmdecl.Analyzer,
-		assign.Analyzer,
-		atomic.Analyzer,
-		atomicalign.Analyzer,
-		bools.Analyzer,
-		buildssa.Analyzer,
-		buildtag.Analyzer,
-		cgocall.Analyzer,
-		composite.Analyzer,
-		copylock.Analyzer,
-		ctrlflow.Analyzer,
-		deepequalerrors.Analyzer,
-		defers.Analyzer,
-		directive.Analyzer,
-		errorsas.Analyzer,
-		fieldalignment.Analyzer,
-		findcall.Analyzer,
-		framepointer.Analyzer,
-		httpmux.Analyzer,
-		httpresponse.Analyzer,
-		ifaceassert.Analyzer,
-		inspect.Analyzer,
-		loopclosure.Analyzer,
-		lostcancel.Analyzer,
-		nilfunc.Analyzer,
-		nilness.Analyzer,
-		pkgfact.Analyzer,
-		printf.Analyzer,
-		reflectvaluecompare.Analyzer,
-		shadow.Analyzer,
-		shift.Analyzer,
-		sigchanyzer.Analyzer,
-		slog.Analyzer,
-		sortslice.Analyzer,
-		stdmethods.Analyzer,
-		stdversion.Analyzer,
-		stringintconv.Analyzer,
-		structtag.Analyzer,
-		testinggoroutine.Analyzer,
-		tests.Analyzer,
-		timeformat.Analyzer,
-		unmarshal.Analyzer,
-		unreachable.Analyzer,
-		unsafeptr.Analyzer,
-		unusedresult.Analyzer,
-		unusedwrite.Analyzer,
-		usesgenerics.Analyzer,
+		mychecks...,
 	)
 }
