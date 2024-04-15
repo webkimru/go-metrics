@@ -55,7 +55,7 @@ func TestSend(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Send(tt.url, tt.metric)
+			err := Send(context.Background(), tt.url, tt.metric)
 			assert.Error(t, err)
 		})
 	}

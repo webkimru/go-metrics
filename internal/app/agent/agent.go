@@ -117,7 +117,7 @@ func Worker(ctx context.Context, wg *sync.WaitGroup, jobs <-chan []metrics.Reque
 			return
 		// или читаем задачи
 		case job := <-jobs:
-			err := Send(fmt.Sprintf("http://%s/updates/", app.ServerAddress), job)
+			err := Send(ctx, fmt.Sprintf("http://%s/updates/", app.ServerAddress), job)
 			if err != nil {
 				result := Result{
 					Err: err,
@@ -138,7 +138,7 @@ func AddMetricsToJob(ctx context.Context, wg *sync.WaitGroup, metric *metrics.Me
 		case <-ctx.Done():
 			// где пишем, там и закрываем канал
 			close(jobs)
-			ShutdownJobs(jobs)
+			ShutdownJobs(ctx, jobs)
 			wg.Done()
 			return
 		// ждем таймер
@@ -173,7 +173,7 @@ func AddMetricsToJob(ctx context.Context, wg *sync.WaitGroup, metric *metrics.Me
 	}
 }
 
-func Send(url string, request metrics.RequestMetricSlice) error {
+func Send(ctx context.Context, url string, request metrics.RequestMetricSlice) error {
 	data, err := easyjson.Marshal(request)
 	if err != nil {
 		return fmt.Errorf("failed to marshal request=%v", request)
@@ -184,7 +184,7 @@ func Send(url string, request metrics.RequestMetricSlice) error {
 		return fmt.Errorf("failed Compress()=%w", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -214,11 +214,11 @@ func Send(url string, request metrics.RequestMetricSlice) error {
 	return nil
 }
 
-func ShutdownJobs(jobs chan []metrics.RequestMetric) {
+func ShutdownJobs(ctx context.Context, jobs chan []metrics.RequestMetric) {
 	logger.Log.Infof("Sending %d metric jobs...", len(jobs))
 
 	for job := range jobs {
-		err := Send(fmt.Sprintf("http://%s/updates/", app.ServerAddress), job)
+		err := Send(ctx, fmt.Sprintf("http://%s/updates/", app.ServerAddress), job)
 		if err != nil {
 			logger.Log.Errorln(err)
 		}

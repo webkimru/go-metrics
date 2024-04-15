@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -34,14 +35,21 @@ func TestHandlers(t *testing.T) {
 		t.Run(tt.name+":"+tt.url, func(t *testing.T) {
 			switch tt.method {
 			case http.MethodPost:
-				resp, err := ts.Client().Post(ts.URL+tt.url, "text/plain", nil)
-				resp.Body.Close()
+				req, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+tt.url, nil)
+				assert.NoError(t, err)
+				req.Header.Set("Content-Type", "text/plain")
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				defer resp.Body.Close()
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedStatusCode, resp.StatusCode)
 
 			case http.MethodGet:
-				resp, err := ts.Client().Get(ts.URL + tt.url)
-				resp.Body.Close()
+				req, err := http.NewRequestWithContext(context.Background(), "GET", ts.URL+tt.url, nil)
+				assert.NoError(t, err)
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				defer resp.Body.Close()
 				assert.NoError(t, err)
 				assert.Equal(t, resp.StatusCode, tt.expectedStatusCode)
 			}

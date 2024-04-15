@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/fatih/errwrap/errwrap"
+	"github.com/sonatard/noctx"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/appends"
@@ -59,7 +60,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/usesgenerics"
 	"honnef.co/go/tools/staticcheck"
 
-	custom "github.com/webkimru/go-yandex-metrics/cmd/staticlint/analysis"
+	osexit "github.com/webkimru/go-yandex-metrics/cmd/staticlint/analysis"
 )
 
 // Config — имя файла конфигурации.
@@ -86,14 +87,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mychecks := []*analysis.Analyzer{
-		custom.ExitCheckAnalyzer,
-	}
+	var mychecks []*analysis.Analyzer
 	checks := make(map[string]bool)
 	for _, v := range cfg.Staticcheck {
 		checks[v] = true
 	}
-	// Добавляем анализаторы из staticcheck, которые указаны в файле конфигурации
+	// Добавляем анализаторы из staticcheck, которые указаны в файле конфигурации.
 	for _, v := range staticcheck.Analyzers {
 		if checks[v.Analyzer.Name] {
 			mychecks = append(mychecks, v.Analyzer)
@@ -200,11 +199,15 @@ func main() {
 			mychecks = append(mychecks, usesgenerics.Analyzer)
 		}
 	}
-	// Добавляем публичный анализатор errwrap
+	// Добавляем публичные анализаторы, включачая свой кастомный osexit.
 	for _, v := range cfg.Custom {
 		switch v {
 		case "errwrap":
 			mychecks = append(mychecks, errwrap.Analyzer)
+		case "noctx":
+			mychecks = append(mychecks, noctx.Analyzer)
+		case "osexit":
+			mychecks = append(mychecks, osexit.ExitCheckAnalyzer)
 		}
 	}
 
