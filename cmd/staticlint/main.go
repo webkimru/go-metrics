@@ -2,7 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	custom "github.com/webkimru/go-yandex-metrics/cmd/staticlint/analysis"
+	"log"
+	"os"
+	"path/filepath"
+
+	"github.com/fatih/errwrap/errwrap"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/appends"
@@ -54,9 +58,8 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unusedwrite"
 	"golang.org/x/tools/go/analysis/passes/usesgenerics"
 	"honnef.co/go/tools/staticcheck"
-	"log"
-	"os"
-	"path/filepath"
+
+	custom "github.com/webkimru/go-yandex-metrics/cmd/staticlint/analysis"
 )
 
 // Config — имя файла конфигурации.
@@ -66,6 +69,7 @@ const Config = `config.json`
 type ConfigData struct {
 	Staticcheck    []string
 	Analysispasses []string
+	Custom         []string
 }
 
 func main() {
@@ -194,6 +198,13 @@ func main() {
 			mychecks = append(mychecks, unusedwrite.Analyzer)
 		case "usesgenerics":
 			mychecks = append(mychecks, usesgenerics.Analyzer)
+		}
+	}
+	// Добавляем публичный анализатор errwrap
+	for _, v := range cfg.Custom {
+		switch v {
+		case "errwrap":
+			mychecks = append(mychecks, errwrap.Analyzer)
 		}
 	}
 

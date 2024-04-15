@@ -181,7 +181,7 @@ func Send(url string, request metrics.RequestMetricSlice) error {
 
 	// Compress data
 	if err = Compress(&data); err != nil {
-		return fmt.Errorf("failed Compress()=%v", err)
+		return fmt.Errorf("failed Compress()=%w", err)
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
