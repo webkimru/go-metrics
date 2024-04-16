@@ -18,29 +18,33 @@ func main() {
 	// при штатном завершении сервера все накопленные данные должны сохраняться
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-c
-		async.SaveData(ctx)
-		logger.Log.Infoln("Successful shutdown")
-		server.ShutdownDB()
-		cancel()
-		os.Exit(0)
-	}()
 
 	// настраиваем/инициализируем приложение
 	serverAddress, err := server.Setup(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
+	srv := &http.Server{
+		Addr:    *serverAddress,
+		Handler: server.Routes(),
+	}
+
+	// gracefully shutdown
+	go func() {
+		<-c
+		async.SaveData(ctx)
+		logger.Log.Infoln("Successful shutdown")
+		server.Shutdown(ctx, srv)
+		cancel()
+	}()
 
 	// асинхронная запись метрик
 	async.FileWriter(ctx)
 
 	// стартуем сервер
 	logger.Log.Infof("Starting metric server on %s", *serverAddress)
-	err = http.ListenAndServe(*serverAddress, server.Routes())
-	if err != nil {
-		panic(err)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logger.Log.Fatal(err)
 	}
 
 	<-ctx.Done()
