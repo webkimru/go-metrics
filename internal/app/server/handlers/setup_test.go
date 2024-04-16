@@ -32,9 +32,10 @@ func TestMain(m *testing.M) {
 
 func getRoutes() http.Handler {
 	r := chi.NewRouter()
-	r.Post("/", Repo.Default)
 	r.Post("/update/{metric}/{name}/{value}", Repo.PostMetrics)
 	r.Get("/value/{metric}/{name}", Repo.GetMetric)
+	r.Get("/", Repo.Default)
+	r.Post("/updates/", Repo.PostBatchMetrics)
 
 	return r
 }
