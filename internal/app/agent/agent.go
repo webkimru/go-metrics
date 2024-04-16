@@ -230,11 +230,11 @@ func ShutdownJobs(ctx context.Context, jobs chan []metrics.RequestMetric) {
 func ShutdownResults(results chan Result) {
 	logger.Log.Infof("Writting %d logs of the results...", len(results))
 
+	close(results)
+
 	for res := range results {
 		if res.Err != nil {
 			logger.Log.Errorln(res.Err)
 		}
 	}
-
-	close(results)
 }
