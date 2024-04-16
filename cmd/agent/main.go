@@ -75,12 +75,13 @@ func main() {
 	// можно передать не только ошибку, но и данные, добавить их в новую задачу
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		for {
 			select {
 			// ждем отмены контекста из main и выходим
 			case <-ctx.Done():
 				agent.ShutdownResults(results)
-				wg.Done()
 				return
 			case res := <-results:
 				if res.Err != nil {
