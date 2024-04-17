@@ -39,6 +39,7 @@ func TestWithSign(t *testing.T) {
 		resp, err := http.DefaultClient.Do(r)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		defer resp.Body.Close()
 	})
 
 	t.Run("invalid sign hex", func(t *testing.T) {
@@ -49,14 +50,16 @@ func TestWithSign(t *testing.T) {
 		resp, err := http.DefaultClient.Do(r)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		defer resp.Body.Close()
 	})
 
 	t.Run("without secret key", func(t *testing.T) {
 		app.SecretKey = ""
 		r := httptest.NewRequest("POST", srv.URL, bytes.NewReader([]byte("")))
 		r.RequestURI = ""
-		_, err := http.DefaultClient.Do(r)
+		resp, err := http.DefaultClient.Do(r)
 		assert.NoError(t, err)
+		defer resp.Body.Close()
 	})
 
 	t.Run("empty hash", func(t *testing.T) {
@@ -64,8 +67,9 @@ func TestWithSign(t *testing.T) {
 		r := httptest.NewRequest("POST", srv.URL, bytes.NewReader([]byte("")))
 		r.RequestURI = ""
 		r.Header.Set("HashSHA256", "")
-		_, err := http.DefaultClient.Do(r)
+		resp, err := http.DefaultClient.Do(r)
 		assert.NoError(t, err)
+		defer resp.Body.Close()
 	})
 
 	t.Run("wrong sign", func(t *testing.T) {
@@ -77,5 +81,6 @@ func TestWithSign(t *testing.T) {
 		resp, err := http.DefaultClient.Do(r)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		defer resp.Body.Close()
 	})
 }
