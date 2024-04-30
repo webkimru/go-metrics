@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof" // подключаем пакет pprof
@@ -15,9 +16,19 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 var m metrics.Metric
 
 func main() {
+	fmt.Println("Build version:", checkVarBuild(buildVersion))
+	fmt.Println("Build date:", checkVarBuild(buildDate))
+	fmt.Println("Build commit:", checkVarBuild(buildCommit))
+
 	// понадобится для ожидания всех горутин
 	var wg sync.WaitGroup
 
@@ -75,12 +86,13 @@ func main() {
 	// можно передать не только ошибку, но и данные, добавить их в новую задачу
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		for {
 			select {
 			// ждем отмены контекста из main и выходим
 			case <-ctx.Done():
 				agent.ShutdownResults(results)
-				wg.Done()
 				return
 			case res := <-results:
 				if res.Err != nil {
@@ -92,4 +104,12 @@ func main() {
 
 	wg.Wait()
 	logger.Log.Infoln("Successful shutdown")
+}
+
+func checkVarBuild(s string) string {
+	if s == "" {
+		return "N/A"
+	}
+
+	return s
 }

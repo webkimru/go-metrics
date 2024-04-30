@@ -30,6 +30,26 @@ func TestGetMetrics(t *testing.T) {
 	}
 }
 
+func TestGetExtraMetrics(t *testing.T) {
+	a := config.AppConfig{
+		PollInterval: 1,
+	}
+	app = a
+
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(context.Background())
+	m := metrics.Metric{}
+	wg.Add(1)
+	go GetExtraMetrics(ctx, &wg, &m)
+
+	time.Sleep(3 * time.Second)
+	cancel()
+
+	if m.TotalMemory == 0 {
+		t.Error("Expected TotalMemory value > 0, but got 0")
+	}
+}
+
 func TestSend(t *testing.T) {
 	a := config.AppConfig{
 		SecretKey: "123",
@@ -55,7 +75,7 @@ func TestSend(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Send(tt.url, tt.metric)
+			err := Send(context.Background(), tt.url, tt.metric)
 			assert.Error(t, err)
 		})
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store/pg"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 )
@@ -147,8 +148,15 @@ func Setup(ctx context.Context) (*string, error) {
 	return serverAddress, nil
 }
 
-func ShutdownDB() {
+func Shutdown(ctx context.Context, srv *http.Server) {
 	if app.StorePriority == config.Database {
-		pg.DB.Conn.Close()
+		err := pg.DB.Conn.Close()
+		if err != nil {
+			logger.Log.Errorf("Faild pg.DB.Conn.Close(): %v", err)
+		}
+	}
+
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Log.Fatalf("Server shutdown failed: %v", err)
 	}
 }
