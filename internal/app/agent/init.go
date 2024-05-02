@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/security"
 	"log"
 	"os"
 	"strconv"
@@ -16,6 +17,7 @@ func Setup() (int, error) {
 	pollInterval := flag.Int("p", 2, "poll interval (in seconds)")
 	secretKey := flag.String("k", "", "secret key")
 	rateLimit := flag.Int("l", 1, "rate limit (a number of workers)")
+	cryptoKey := flag.String("crypto-key", "", "path to pem public key")
 
 	// разбор командой строки
 	flag.Parse()
@@ -48,6 +50,9 @@ func Setup() (int, error) {
 		}
 		rateLimit = &pi
 	}
+	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+		cryptoKey = &envCryptoKey
+	}
 
 	// конфигурация приложения
 	a := config.AppConfig{
@@ -56,6 +61,7 @@ func Setup() (int, error) {
 		PollInterval:   *pollInterval,
 		SecretKey:      *secretKey,
 		RateLimit:      *rateLimit,
+		CryptoKey:      *cryptoKey,
 	}
 	app = a
 
@@ -70,7 +76,15 @@ func Setup() (int, error) {
 		"REPORT_INTERVAL", app.ReportInterval,
 		"POLL_INTERVAL", app.PollInterval,
 		"KEY", app.SecretKey,
+		"CRYPTO_KEY", app.CryptoKey,
 	)
+
+	// инициализация ключей ассиметричного шифрования
+	publicKey, err := security.GetPublicKeyPEM(app.CryptoKey)
+	if err != nil {
+		logger.Log.Errorf("faild GetPublicKeyPEM()=%v", err)
+	}
+	app.PublicKeyPEM = publicKey
 
 	return app.RateLimit, nil
 }

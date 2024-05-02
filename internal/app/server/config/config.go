@@ -1,5 +1,9 @@
 package config
 
+import (
+	"crypto/rsa"
+)
+
 type Store int
 
 const (
@@ -17,6 +21,8 @@ type RecorderConfig struct {
 type AppConfig struct {
 	ServerAddress string
 	SecretKey     string
+	CryptoKey     string
+	PrivateKeyPEM *rsa.PrivateKey
 	DatabaseDSN   string
 	FileStore     RecorderConfig
 	StorePriority Store

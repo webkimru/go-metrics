@@ -11,6 +11,7 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/middleware"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store/pg"
+	"github.com/webkimru/go-yandex-metrics/internal/security"
 	"log"
 	"net/http"
 	"os"
@@ -31,6 +32,7 @@ func Setup(ctx context.Context) (*string, error) {
 	storeRestore := flag.Bool("r", true, "restore saved data")
 	databaseDSN := flag.String("d", "", "database dsn")
 	secretKey := flag.String("k", "", "secret key")
+	cryptoKey := flag.String("crypto-key", "", "path to pem private key")
 	// разбор командной строки
 	flag.Parse()
 	// определяем переменные окружения
@@ -60,6 +62,9 @@ func Setup(ctx context.Context) (*string, error) {
 	if envSecretKey := os.Getenv("KEY"); envSecretKey != "" {
 		secretKey = &envSecretKey
 	}
+	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+		cryptoKey = &envCryptoKey
+	}
 
 	// инициализируем логер
 	if err := logger.Initialize("info"); err != nil {
@@ -76,6 +81,7 @@ func Setup(ctx context.Context) (*string, error) {
 			Restore:  *storeRestore,
 			FilePath: *storeFilePath,
 		},
+		CryptoKey: *cryptoKey,
 	}
 	app = a
 
@@ -87,7 +93,15 @@ func Setup(ctx context.Context) (*string, error) {
 		"RESTORE", app.FileStore.Restore,
 		"DATABASE_DSN", app.DatabaseDSN,
 		"KEY", app.SecretKey,
+		"CRYPTO_KEY", app.CryptoKey,
 	)
+
+	// инициализация ключей шифрования
+	privateKey, err := security.GetPrivateKeyPEM(app.CryptoKey)
+	if err != nil {
+		logger.Log.Errorf("faild GetPrivateKeyPEM()=%v", err)
+	}
+	app.PrivateKeyPEM = privateKey
 
 	// инициализируем хранение метрик в файле
 	if err := file.Initialize(&app); err != nil {
