@@ -24,7 +24,13 @@ func Decrypt(next http.Handler) http.Handler {
 			return
 		}
 
+		// decode and decrypt
 		data, err := hex.DecodeString(string(b))
+		if err != nil {
+			logger.Log.Errorf("failed DecodeString()=%v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		data, err = rsa.DecryptPKCS1v15(rand.Reader, app.PrivateKeyPEM, data)
 		if err != nil {
 			logger.Log.Errorf("failed ReadAll()=%v", err)
