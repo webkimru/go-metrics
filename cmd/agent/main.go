@@ -42,7 +42,7 @@ func main() {
 	// при штатном завершении отменяем контекст для завершения работы всех горутин
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	wg.Add(1)
 	go func() {
 		<-c
