@@ -81,12 +81,17 @@ func Setup(ctx context.Context) (*string, error) {
 	app = a
 
 	// читаем конфиг из файла
-	configFile, err := os.ReadFile(*configuration)
-	if err != nil {
-		return nil, fmt.Errorf("failed loading config from file=%s: %w", *configuration, err)
-	}
-	if err = json.Unmarshal(configFile, &app); err != nil {
-		return nil, fmt.Errorf("failed unmarshaling config from file=%s: %w", *configuration, err)
+	if *configuration != "" {
+		configFile, err := os.ReadFile(*configuration)
+		if err != nil {
+			return nil, fmt.Errorf("failed loading config from file=%s: %w", *configuration, err)
+		}
+		if err = json.Unmarshal(configFile, &app); err != nil {
+			return nil, fmt.Errorf("failed unmarshaling config from file=%s: %w", *configuration, err)
+		}
+		if err == nil {
+			logger.Log.Infof("configuration loaded successfully from file=%s", *configuration)
+		}
 	}
 	// переопределяем значения конфига значениями из envs / flags:
 	if *serverAddress != "" {
@@ -115,7 +120,8 @@ func Setup(ctx context.Context) (*string, error) {
 		return nil, fmt.Errorf("server address is not defined, it must be specified, for example, localhost:8080")
 	}
 	if app.FileStore.FilePath == "" {
-		return nil, fmt.Errorf("the path to the storage file is not defined, it must be specified, for example, /tmp/metrics-db.json")
+		app.FileStore.FilePath = "/tmp/metrics-db.json" // silent default
+		logger.Log.Infof("storage file is automatically set = %s", app.FileStore.FilePath)
 	}
 
 	logger.Log.Infoln(
@@ -133,6 +139,7 @@ func Setup(ctx context.Context) (*string, error) {
 	privateKey, err := security.GetPrivateKeyPEM(app.CryptoKey)
 	if err != nil {
 		logger.Log.Errorf("faild GetPrivateKeyPEM()=%v", err)
+		logger.Log.Warn("Service starting without encryption")
 	}
 	app.PrivateKeyPEM = privateKey
 
