@@ -103,7 +103,7 @@ func Setup(ctx context.Context) (*string, error) {
 	if *storeFilePath != "" {
 		app.FileStore.FilePath = *storeFilePath
 	}
-	if *storeRestore != false {
+	if *storeRestore {
 		app.FileStore.Restore = *storeRestore
 	}
 	if *databaseDSN != "" {
