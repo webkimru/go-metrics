@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/file"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/file/async"
@@ -22,17 +24,17 @@ var app config.AppConfig
 
 // Setup будет полезна при инициализации зависимостей сервера перед запуском
 func Setup(ctx context.Context) (*string, error) {
-
 	// указываем имя флага, значение по умолчанию и описание
-	serverAddress := flag.String("a", "localhost:8080", "server address")
+	serverAddress := flag.String("a", "", "server address")
 	// интервал времени в секундах, по истечении которого текущие показания сервера сохраняются на диск
 	// (по умолчанию 300 секунд, значение 0 делает запись синхронной)
-	storeInterval := flag.Int("i", 300, "store interval")
-	storeFilePath := flag.String("f", "/tmp/metrics-db.json", "file storage path")
-	storeRestore := flag.Bool("r", true, "restore saved data")
+	storeInterval := flag.Int("i", 0, "store interval")
+	storeFilePath := flag.String("f", "", "file storage path")
+	storeRestore := flag.Bool("r", false, "restore saved data")
 	databaseDSN := flag.String("d", "", "database dsn")
 	secretKey := flag.String("k", "", "secret key")
-	cryptoKey := flag.String("crypto-key", "", "path to pem private key")
+	cryptoKey := flag.String("crypto-key", "", "path to pem private key file")
+	configuration := flag.String("c", "", "path to json configuration file")
 	// разбор командной строки
 	flag.Parse()
 	// определяем переменные окружения
@@ -42,7 +44,7 @@ func Setup(ctx context.Context) (*string, error) {
 	if envStoreInterval := os.Getenv("STORE_INTERVAL"); envStoreInterval != "" {
 		si, err := strconv.Atoi(envStoreInterval)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		storeInterval = &si
 	}
@@ -52,7 +54,7 @@ func Setup(ctx context.Context) (*string, error) {
 	if envStoreRestore := os.Getenv("RESTORE"); envStoreRestore != "" {
 		sr, err := strconv.ParseBool(envStoreRestore)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		storeRestore = &sr
 	}
@@ -65,6 +67,9 @@ func Setup(ctx context.Context) (*string, error) {
 	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
 		cryptoKey = &envCryptoKey
 	}
+	if envConfig := os.Getenv("CONFIG"); envConfig != "" {
+		configuration = &envConfig
+	}
 
 	// инициализируем логер
 	if err := logger.Initialize("info"); err != nil {
@@ -72,18 +77,46 @@ func Setup(ctx context.Context) (*string, error) {
 	}
 
 	// конфигурация приложения
-	a := config.AppConfig{
-		ServerAddress: *serverAddress,
-		SecretKey:     *secretKey,
-		DatabaseDSN:   *databaseDSN,
-		FileStore: config.RecorderConfig{
-			Interval: *storeInterval,
-			Restore:  *storeRestore,
-			FilePath: *storeFilePath,
-		},
-		CryptoKey: *cryptoKey,
-	}
+	a := config.AppConfig{}
 	app = a
+
+	// читаем конфиг из файла
+	configFile, err := os.ReadFile(*configuration)
+	if err != nil {
+		return nil, fmt.Errorf("failed loading config from file=%s: %w", *configuration, err)
+	}
+	if err = json.Unmarshal(configFile, &app); err != nil {
+		return nil, fmt.Errorf("failed unmarshaling config from file=%s: %w", *configuration, err)
+	}
+	// переопределяем значения конфига значениями из envs / flags:
+	if *serverAddress != "" {
+		app.ServerAddress = *serverAddress
+	}
+	if *storeInterval != 0 {
+		app.FileStore.Interval = *storeInterval
+	}
+	if *storeFilePath != "" {
+		app.FileStore.FilePath = *storeFilePath
+	}
+	if *storeRestore != false {
+		app.FileStore.Restore = *storeRestore
+	}
+	if *databaseDSN != "" {
+		app.DatabaseDSN = *databaseDSN
+	}
+	if *secretKey != "" {
+		app.SecretKey = *secretKey
+	}
+	if *cryptoKey != "" {
+		app.CryptoKey = *cryptoKey
+	}
+	// обязательные настройки
+	if app.ServerAddress == "" {
+		return nil, fmt.Errorf("server address is not defined, it must be specified, for example, localhost:8080")
+	}
+	if app.FileStore.FilePath == "" {
+		return nil, fmt.Errorf("the path to the storage file is not defined, it must be specified, for example, /tmp/metrics-db.json")
+	}
 
 	logger.Log.Infoln(
 		"Starting configuration:",
@@ -159,7 +192,7 @@ func Setup(ctx context.Context) (*string, error) {
 	// инициализвруем хендлеры для работы с репозиторием
 	handlers.NewHandlers(repo, &app)
 
-	return serverAddress, nil
+	return &app.ServerAddress, nil
 }
 
 func Shutdown(ctx context.Context, srv *http.Server) {

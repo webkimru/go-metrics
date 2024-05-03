@@ -13,17 +13,17 @@ const (
 )
 
 type RecorderConfig struct {
-	FilePath string
-	Interval int
-	Restore  bool
+	FilePath string `json:"filepath"`
+	Interval int    `json:"interval"`
+	Restore  bool   `json:"restore"`
 }
 
 type AppConfig struct {
-	ServerAddress string
-	SecretKey     string
-	CryptoKey     string
-	PrivateKeyPEM *rsa.PrivateKey
-	DatabaseDSN   string
-	FileStore     RecorderConfig
-	StorePriority Store
+	ServerAddress string          `json:"address,omitempty"`
+	SecretKey     string          `json:"key,omitempty"`
+	CryptoKey     string          `json:"crypto_key,omitempty"`
+	PrivateKeyPEM *rsa.PrivateKey `json:"-"`
+	DatabaseDSN   string          `json:"database_dsn,omitempty"`
+	FileStore     RecorderConfig  `json:"store_file"`
+	StorePriority Store           `json:"-"`
 }
