@@ -79,9 +79,8 @@ func Setup() (int, error) {
 		if err = json.Unmarshal(configFile, &app); err != nil {
 			return 0, fmt.Errorf("failed unmarshaling config from file=%s: %w", *configuration, err)
 		}
-		if err == nil {
-			logger.Log.Infof("configuration loaded successfully from file=%s", *configuration)
-		}
+
+		logger.Log.Infof("configuration loaded successfully from file=%s", *configuration)
 	}
 	// переопределяем значения конфига значениями из envs / flags:
 	if *serverAddress != "" {
