@@ -61,7 +61,7 @@ func TestHandlers(t *testing.T) {
 		})
 	}
 
-	testsContentTypeJson := []struct {
+	testsContentTypeJSON := []struct {
 		name               string
 		url                string
 		body               string
@@ -73,7 +73,7 @@ func TestHandlers(t *testing.T) {
 		{"positive test: counter", "/update/", `{"id":"someMetric","type":"counter","delta":123}`, http.StatusOK},
 	}
 
-	for _, tt := range testsContentTypeJson {
+	for _, tt := range testsContentTypeJSON {
 		t.Run(tt.name+":"+tt.url, func(t *testing.T) {
 			req, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+tt.url, bytes.NewReader([]byte(tt.body)))
 			assert.NoError(t, err)
