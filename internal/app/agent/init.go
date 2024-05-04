@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
 	"github.com/webkimru/go-yandex-metrics/internal/security"
 	"log"
@@ -64,10 +63,6 @@ func Setup() (int, error) {
 	if err := logger.Initialize("info"); err != nil {
 		return 0, err
 	}
-
-	// конфигурация приложения
-	a := config.AppConfig{}
-	app = a
 
 	// читаем конфиг из файла
 	if *configuration != "" {

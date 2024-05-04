@@ -33,7 +33,7 @@ func Decrypt(next http.Handler) http.Handler {
 		}
 		data, err = rsa.DecryptPKCS1v15(rand.Reader, app.PrivateKeyPEM, data)
 		if err != nil {
-			logger.Log.Errorf("failed ReadAll()=%v", err)
+			logger.Log.Errorf("failed DecryptPKCS1v15()=%v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

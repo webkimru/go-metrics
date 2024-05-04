@@ -76,10 +76,6 @@ func Setup(ctx context.Context) (*string, error) {
 		return nil, err
 	}
 
-	// конфигурация приложения
-	a := config.AppConfig{}
-	app = a
-
 	// читаем конфиг из файла
 	if *configuration != "" {
 		configFile, err := os.ReadFile(*configuration)

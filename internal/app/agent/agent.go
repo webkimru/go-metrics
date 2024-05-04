@@ -184,11 +184,12 @@ func Send(ctx context.Context, url string, request metrics.RequestMetricSlice) e
 	}
 
 	// Encrypt request data
-	data, err = rsa.EncryptPKCS1v15(randcrypto.Reader, app.PublicKeyPEM, data)
-	data = []byte(hex.EncodeToString(data))
-
-	if err != nil {
-		return fmt.Errorf("failed EncryptPKCS1v15()=%w", err)
+	if app.PublicKeyPEM != nil {
+		data, err = rsa.EncryptPKCS1v15(randcrypto.Reader, app.PublicKeyPEM, data)
+		if err != nil {
+			return fmt.Errorf("failed EncryptPKCS1v15()=%w", err)
+		}
+		data = []byte(hex.EncodeToString(data))
 	}
 
 	// Compress data
