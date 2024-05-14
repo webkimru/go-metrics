@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	randcrypto "crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -178,7 +180,16 @@ func AddMetricsToJob(ctx context.Context, wg *sync.WaitGroup, metric *metrics.Me
 func Send(ctx context.Context, url string, request metrics.RequestMetricSlice) error {
 	data, err := easyjson.Marshal(request)
 	if err != nil {
-		return fmt.Errorf("failed to marshal request=%v", request)
+		return fmt.Errorf("failed to marshal request=%v, err=%w", request, err)
+	}
+
+	// Encrypt request data
+	if app.PublicKeyPEM != nil {
+		data, err = rsa.EncryptPKCS1v15(randcrypto.Reader, app.PublicKeyPEM, data)
+		if err != nil {
+			return fmt.Errorf("failed EncryptPKCS1v15()=%w", err)
+		}
+		data = []byte(hex.EncodeToString(data))
 	}
 
 	// Compress data

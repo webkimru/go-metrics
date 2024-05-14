@@ -36,6 +36,7 @@ func getRoutes() http.Handler {
 	r.Get("/value/{metric}/{name}", Repo.GetMetric)
 	r.Get("/", Repo.Default)
 	r.Post("/updates/", Repo.PostBatchMetrics)
+	r.Post("/update/", Repo.PostMetrics)
 
 	return r
 }

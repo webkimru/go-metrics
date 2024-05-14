@@ -1,9 +1,11 @@
 package agent
 
 import (
+	"encoding/json"
 	"flag"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent/config"
+	"fmt"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/security"
 	"log"
 	"os"
 	"strconv"
@@ -11,11 +13,13 @@ import (
 
 func Setup() (int, error) {
 	// задаем флаги для агента
-	serverAddress := flag.String("a", "localhost:8080", "server address")
-	reportInterval := flag.Int("r", 10, "report interval (in seconds)")
-	pollInterval := flag.Int("p", 2, "poll interval (in seconds)")
+	serverAddress := flag.String("a", "", "server address")
+	reportInterval := flag.Int("r", 0, "report interval (in seconds)")
+	pollInterval := flag.Int("p", 0, "poll interval (in seconds)")
 	secretKey := flag.String("k", "", "secret key")
-	rateLimit := flag.Int("l", 1, "rate limit (a number of workers)")
+	rateLimit := flag.Int("l", 0, "rate limit (a number of workers)")
+	cryptoKey := flag.String("crypto-key", "", "path to pem public key file")
+	configuration := flag.String("c", "", "path to json configuration file")
 
 	// разбор командой строки
 	flag.Parse()
@@ -48,20 +52,65 @@ func Setup() (int, error) {
 		}
 		rateLimit = &pi
 	}
-
-	// конфигурация приложения
-	a := config.AppConfig{
-		ServerAddress:  *serverAddress,
-		ReportInterval: *reportInterval,
-		PollInterval:   *pollInterval,
-		SecretKey:      *secretKey,
-		RateLimit:      *rateLimit,
+	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+		cryptoKey = &envCryptoKey
 	}
-	app = a
+	if envConfig := os.Getenv("CONFIG"); envConfig != "" {
+		configuration = &envConfig
+	}
 
 	// инициализируем логер
 	if err := logger.Initialize("info"); err != nil {
 		return 0, err
+	}
+
+	// читаем конфиг из файла
+	if *configuration != "" {
+		configFile, err := os.ReadFile(*configuration)
+		if err != nil {
+			return 0, fmt.Errorf("failed loading config from file=%s: %w", *configuration, err)
+		}
+		// определяем для всего сервиса конфигурацию из файла
+		if err = json.Unmarshal(configFile, &app); err != nil {
+			return 0, fmt.Errorf("failed unmarshaling config from file=%s: %w", *configuration, err)
+		}
+
+		logger.Log.Infof("configuration loaded successfully from file=%s", *configuration)
+	}
+	// переопределяем значения конфига значениями из envs / flags:
+	if *serverAddress != "" {
+		app.ServerAddress = *serverAddress
+	}
+	if *reportInterval != 0 {
+		app.ReportInterval = *reportInterval
+	}
+	if *pollInterval != 0 {
+		app.PollInterval = *pollInterval
+	}
+	if *secretKey != "" {
+		app.SecretKey = *secretKey
+	}
+	if *rateLimit != 0 {
+		app.RateLimit = *rateLimit
+	}
+	if *cryptoKey != "" {
+		app.CryptoKey = *cryptoKey
+	}
+	// обязательные настройки
+	if app.ServerAddress == "" {
+		return 0, fmt.Errorf("destionation server address is not defined, it must be specified, for example, localhost:8080")
+	}
+	if app.RateLimit == 0 {
+		app.RateLimit = 1 // silent default
+		logger.Log.Infof("default rate limit is automatically set = %d", app.RateLimit)
+	}
+	if app.PollInterval == 0 {
+		app.PollInterval = 2 // silent default
+		logger.Log.Infof("default poll interval is automatically set = %d", app.PollInterval)
+	}
+	if app.ReportInterval == 0 {
+		app.ReportInterval = 10 // silent default
+		logger.Log.Infof("default report interval is automatically set = %d", app.ReportInterval)
 	}
 
 	logger.Log.Infoln(
@@ -70,7 +119,16 @@ func Setup() (int, error) {
 		"REPORT_INTERVAL", app.ReportInterval,
 		"POLL_INTERVAL", app.PollInterval,
 		"KEY", app.SecretKey,
+		"CRYPTO_KEY", app.CryptoKey,
+		"RATE_LIMIT", app.RateLimit,
 	)
+
+	// инициализация ключей ассиметричного шифрования
+	publicKey, err := security.GetPublicKeyPEM(app.CryptoKey)
+	if err != nil {
+		logger.Log.Errorf("faild GetPublicKeyPEM()=%v", err)
+	}
+	app.PublicKeyPEM = publicKey
 
 	return app.RateLimit, nil
 }

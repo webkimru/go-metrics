@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -55,8 +56,33 @@ func TestHandlers(t *testing.T) {
 				resp, err := client.Do(req)
 				defer resp.Body.Close()
 				assert.NoError(t, err)
-				assert.Equal(t, resp.StatusCode, tt.expectedStatusCode)
+				assert.Equal(t, tt.expectedStatusCode, resp.StatusCode)
 			}
+		})
+	}
+
+	testsContentTypeJSON := []struct {
+		name               string
+		url                string
+		body               string
+		expectedStatusCode int
+	}{
+		{"negative test: batch", "/updates/", ``, http.StatusBadRequest},
+		{"positive test: batch", "/updates/", `[{"id":"someMetric","type":"counter","delta":10}]`, http.StatusOK},
+		{"positive test: gauge", "/update/", `{"id":"someMetric","type":"gauge","value":1.23}`, http.StatusOK},
+		{"positive test: counter", "/update/", `{"id":"someMetric","type":"counter","delta":123}`, http.StatusOK},
+	}
+
+	for _, tt := range testsContentTypeJSON {
+		t.Run(tt.name+":"+tt.url, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+tt.url, bytes.NewReader([]byte(tt.body)))
+			assert.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			assert.NoError(t, err)
+			defer resp.Body.Close()
+			assert.Equal(t, tt.expectedStatusCode, resp.StatusCode)
 		})
 	}
 }
