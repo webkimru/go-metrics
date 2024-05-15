@@ -18,48 +18,31 @@ func TestTrustedSubnet(t *testing.T) {
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
-	t.Run("valid ip", func(t *testing.T) {
-		app.TrustedSubnet = "127.0.0.0/8"
-		r := httptest.NewRequest("POST", srv.URL, bytes.NewReader([]byte("")))
-		r.Header.Set("X-Real-IP", "127.0.0.1")
-		r.RequestURI = ""
+	tests := []struct {
+		name               string
+		trustedSubnet      string
+		realIP             string
+		expectedStatusCode int
+	}{
+		{"positive: valid ip", "127.0.0.0/8", "127.0.0.1", http.StatusOK},
+		{"negative: invalid ip", "192.168.1.0/32", "192.168.0.1", http.StatusForbidden},
+		{"positive: without subnet", "", "", http.StatusOK},
+		{"negative: invalid subnet", "none", "", http.StatusInternalServerError},
+	}
 
-		resp, err := http.DefaultClient.Do(r)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		defer resp.Body.Close()
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app.TrustedSubnet = tt.trustedSubnet
+			r := httptest.NewRequest("POST", srv.URL, bytes.NewReader([]byte("")))
+			if tt.realIP != "" {
+				r.Header.Set("X-Real-IP", tt.realIP)
+			}
+			r.RequestURI = ""
 
-	t.Run("invalid ip", func(t *testing.T) {
-		app.TrustedSubnet = "192.168.1.0/32"
-		r := httptest.NewRequest("POST", srv.URL, bytes.NewReader([]byte("")))
-		r.Header.Set("X-Real-IP", "192.168.0.1")
-		r.RequestURI = ""
-
-		resp, err := http.DefaultClient.Do(r)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
-		defer resp.Body.Close()
-	})
-
-	t.Run("without subnet", func(t *testing.T) {
-		app.TrustedSubnet = ""
-		r := httptest.NewRequest("POST", srv.URL, bytes.NewReader([]byte("")))
-		r.RequestURI = ""
-
-		resp, err := http.DefaultClient.Do(r)
-		assert.NoError(t, err)
-		defer resp.Body.Close()
-	})
-
-	t.Run("invalid subnet", func(t *testing.T) {
-		app.TrustedSubnet = "none"
-		r := httptest.NewRequest("POST", srv.URL, bytes.NewReader([]byte("")))
-		r.RequestURI = ""
-
-		resp, err := http.DefaultClient.Do(r)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-		defer resp.Body.Close()
-	})
+			resp, err := http.DefaultClient.Do(r)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedStatusCode, resp.StatusCode)
+			defer resp.Body.Close()
+		})
+	}
 }
