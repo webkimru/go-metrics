@@ -135,6 +135,7 @@ func Setup(ctx context.Context) (*string, error) {
 		"DATABASE_DSN", app.DatabaseDSN,
 		"KEY", app.SecretKey,
 		"CRYPTO_KEY", app.CryptoKey,
+		"TRUSTED_SUBNET", app.TrustedSubnet,
 	)
 
 	// инициализация ключей шифрования
