@@ -14,16 +14,16 @@ import (
 )
 
 var (
-	buildVersion string
-	buildDate    string
-	buildCommit  string
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
 )
 
 // main начало приложения
 func main() {
-	fmt.Println("Build version:", checkVarBuild(buildVersion))
-	fmt.Println("Build date:", checkVarBuild(buildDate))
-	fmt.Println("Build commit:", checkVarBuild(buildCommit))
+	fmt.Println("Build version:", buildVersion)
+	fmt.Println("Build date:", buildDate)
+	fmt.Println("Build commit:", buildCommit)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	// при штатном завершении сервера все накопленные данные должны сохраняться
@@ -59,12 +59,4 @@ func main() {
 	}
 
 	<-ctx.Done()
-}
-
-func checkVarBuild(s string) string {
-	if s == "" {
-		return "N/A"
-	}
-
-	return s
 }
