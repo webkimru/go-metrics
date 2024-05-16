@@ -14,7 +14,7 @@ func TestSetup(t *testing.T) {
 		os.Setenv("RATE_LIMIT", "1")
 		os.Setenv("ADDRESS", "localhost:8080")
 
-		_, err := Setup()
+		_, _, err := Setup()
 		assert.NoError(t, err)
 	})
 }

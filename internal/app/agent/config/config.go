@@ -5,6 +5,7 @@ import (
 )
 
 type AppConfig struct {
+	ServerProtocol string         `json:"protocol,omitempty"`
 	SecretKey      string         `json:"key,omitempty"`
 	ServerAddress  string         `json:"address,omitempty"`
 	CryptoKey      string         `json:"crypto_key,omitempty"`

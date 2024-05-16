@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
+	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
+	pb "github.com/webkimru/go-yandex-metrics/internal/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
 	_ "net/http/pprof" // подключаем пакет pprof
@@ -10,10 +16,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent/logger"
-	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
 )
 
 var (
@@ -31,6 +33,8 @@ func main() {
 
 	// понадобится для ожидания всех горутин
 	var wg sync.WaitGroup
+	// GRPC
+	var clientGRPC pb.MetricsClient
 
 	// задаем максимальное количество задач для воркеров
 	const numJobs = 10
@@ -59,9 +63,23 @@ func main() {
 	}()
 
 	// настраиваем/инициализируем приложение
-	rateLimit, err := agent.Setup()
+	serverProtocol, rateLimit, err := agent.Setup()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if serverProtocol == agent.GRPC {
+		go func() {
+			// устанавливаем соединение с сервером GRPC
+			conn, err := grpc.NewClient(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer conn.Close()
+			// получаем переменную интерфейсного типа UsersClient,
+			// через которую будем отправлять сообщения
+			clientGRPC = pb.NewMetricsClient(conn)
+		}()
 	}
 
 	// получаем базовые метрики
@@ -79,7 +97,7 @@ func main() {
 	// запускаем rateLimit воркеров для наших задач
 	for w := 1; w <= rateLimit; w++ {
 		wg.Add(1)
-		go agent.Worker(ctx, &wg, jobs, results)
+		go agent.Worker(ctx, &wg, jobs, results, clientGRPC)
 	}
 
 	// для контроля ошибок отправки метрик из основного потока
