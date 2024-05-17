@@ -251,7 +251,9 @@ func SendThroughGRPC(ctx context.Context, requests []metrics.RequestMetric, c pb
 	if err != nil {
 		return err
 	}
-	resp.Error = err.Error()
+	if resp.Error != "" {
+		return fmt.Errorf(resp.Error)
+	}
 
 	return nil
 }

@@ -33,8 +33,6 @@ func main() {
 
 	// понадобится для ожидания всех горутин
 	var wg sync.WaitGroup
-	// GRPC
-	var clientGRPC pb.MetricsClient
 
 	// задаем максимальное количество задач для воркеров
 	const numJobs = 10
@@ -68,18 +66,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// GRPC
+	var clientGRPC pb.MetricsClient
 	if serverProtocol == agent.GRPC {
-		go func() {
-			// устанавливаем соединение с сервером GRPC
-			conn, err := grpc.NewClient(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer conn.Close()
-			// получаем переменную интерфейсного типа UsersClient,
-			// через которую будем отправлять сообщения
-			clientGRPC = pb.NewMetricsClient(conn)
-		}()
+		// устанавливаем соединение с сервером GRPC
+		conn, err := grpc.NewClient("localhost:3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+		// получаем переменную интерфейсного типа MetricsClient,
+		// через которую будем отправлять сообщения
+		clientGRPC = pb.NewMetricsClient(conn)
 	}
 
 	// получаем базовые метрики
