@@ -7,6 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/agent/metrics"
+	grpc2 "github.com/webkimru/go-yandex-metrics/internal/app/server/grpc"
+	"github.com/webkimru/go-yandex-metrics/internal/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/test/bufconn"
+	"net"
 	"sync"
 	"testing"
 	"time"
@@ -130,4 +135,41 @@ func TestAddMetricsToJob(t *testing.T) {
 		time.Sleep(2 * time.Second)
 		cancel()
 	})
+}
+
+func TestSendThroughGRPC(t *testing.T) {
+	listen := bufconn.Listen(1024 * 1024)
+	defer listen.Close()
+	srv := grpc.NewServer()
+	defer srv.Stop()
+	proto.RegisterMetricsServer(srv, grpc2.Repo)
+	go func() {
+		err := srv.Serve(listen)
+		assert.NoError(t, err)
+	}()
+
+	dialer := func(context.Context, string) (net.Conn, error) {
+		return listen.Dial()
+	}
+	conn, err := grpc.DialContext(context.Background(), "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	assert.NoError(t, err)
+
+	client := proto.NewMetricsClient(conn)
+
+	tests := []struct {
+		name     string
+		ctx      context.Context
+		requests []metrics.RequestMetric
+		c        proto.MetricsClient
+		//wantErr  assert.ErrorAssertionFunc
+	}{
+		{name: "grpc test", ctx: context.Background(), requests: []metrics.RequestMetric{{ID: "someMetric", MType: "counter", Delta: 100}}, c: client},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err = SendThroughGRPC(tt.ctx, tt.requests, tt.c)
+			assert.NoError(t, err)
+			// tt.wantErr(t, SendThroughGRPC(tt.ctx, tt.requests, tt.c), fmt.Sprintf("SendThroughGRPC(%v, %v, %v)", tt.ctx, tt.requests, tt.c))
+		})
+	}
 }
