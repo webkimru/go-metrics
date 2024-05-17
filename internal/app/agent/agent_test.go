@@ -173,3 +173,39 @@ func TestSendThroughGRPC(t *testing.T) {
 		})
 	}
 }
+
+func TestWorker(t *testing.T) {
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(context.Background())
+	jobs := make(chan []metrics.RequestMetric, 1)
+	results := make(chan Result, 1)
+	jobs <- []metrics.RequestMetric{
+		{
+			ID:    "someMetric",
+			MType: "counter",
+			Delta: 100,
+		},
+	}
+
+	listen := bufconn.Listen(1024 * 1024)
+	defer listen.Close()
+	srv := grpc.NewServer()
+	defer srv.Stop()
+	proto.RegisterMetricsServer(srv, grpc2.Repo)
+	go func() {
+		err := srv.Serve(listen)
+		assert.NoError(t, err)
+	}()
+
+	dialer := func(context.Context, string) (net.Conn, error) {
+		return listen.Dial()
+	}
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	assert.NoError(t, err)
+
+	client := proto.NewMetricsClient(conn)
+
+	cancel()
+	wg.Add(1)
+	Worker(ctx, &wg, jobs, results, client)
+}
