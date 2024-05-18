@@ -10,6 +10,8 @@ import (
 	grpc2 "github.com/webkimru/go-yandex-metrics/internal/app/server/grpc"
 	"github.com/webkimru/go-yandex-metrics/internal/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/test/bufconn"
 	"net"
 	"sync"
@@ -148,10 +150,10 @@ func TestSendThroughGRPC(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 
-	dialer := func(context.Context, string) (net.Conn, error) {
+	resolver.SetDefaultScheme("passthrough")
+	conn, err := grpc.NewClient("bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return listen.Dial()
-	}
-	conn, err := grpc.DialContext(context.Background(), "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 
 	client := proto.NewMetricsClient(conn)
@@ -161,7 +163,6 @@ func TestSendThroughGRPC(t *testing.T) {
 		ctx      context.Context
 		requests []metrics.RequestMetric
 		c        proto.MetricsClient
-		//wantErr  assert.ErrorAssertionFunc
 	}{
 		{name: "grpc test", ctx: context.Background(), requests: []metrics.RequestMetric{{ID: "someMetric", MType: "counter", Delta: 100}}, c: client},
 	}
@@ -169,12 +170,13 @@ func TestSendThroughGRPC(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err = SendThroughGRPC(tt.ctx, tt.requests, tt.c)
 			assert.NoError(t, err)
-			// tt.wantErr(t, SendThroughGRPC(tt.ctx, tt.requests, tt.c), fmt.Sprintf("SendThroughGRPC(%v, %v, %v)", tt.ctx, tt.requests, tt.c))
 		})
 	}
 }
 
 func TestWorker(t *testing.T) {
+	app.PollInterval = 1
+	app.ReportInterval = 1
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
 	jobs := make(chan []metrics.RequestMetric, 1)
@@ -197,15 +199,17 @@ func TestWorker(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 
-	dialer := func(context.Context, string) (net.Conn, error) {
+	resolver.SetDefaultScheme("passthrough")
+	conn, err := grpc.NewClient("bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return listen.Dial()
-	}
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 
 	client := proto.NewMetricsClient(conn)
 
-	cancel()
 	wg.Add(1)
-	Worker(ctx, &wg, jobs, results, client)
+	go Worker(ctx, &wg, jobs, results, client)
+
+	time.Sleep(3 * time.Second)
+	cancel()
 }
