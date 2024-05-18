@@ -10,8 +10,8 @@ import (
 func TestSetup(t *testing.T) {
 	t.Run("valid host address", func(t *testing.T) {
 		os.Setenv("ADDRESS", "localhost:8080")
-		os.Setenv("STORE_INTERVAL", "0")
-		os.Setenv("RESTORE", "false")
+		os.Setenv("STORE_INTERVAL", "1")
+		os.Setenv("RESTORE", "1")
 		os.Setenv("KEY", "123")
 
 		ctx, cancel := context.WithCancel(context.Background())
