@@ -69,10 +69,11 @@ func TestHandlers(t *testing.T) {
 		body               string
 		expectedStatusCode int
 	}{
-		{"negative test: batch", "/updates/", ``, http.StatusBadRequest},
-		{"positive test: batch", "/updates/", `[{"id":"someMetric","type":"counter","delta":10}]`, http.StatusOK},
-		{"positive test: gauge", "/update/", `{"id":"someMetric","type":"gauge","value":1.23}`, http.StatusOK},
-		{"positive test: counter", "/update/", `{"id":"someMetric","type":"counter","delta":123}`, http.StatusOK},
+		{"negative: batch", "/updates/", ``, http.StatusBadRequest},
+		{"negative: PostMetric: error reading body", "/update/", `errBody`, http.StatusBadRequest},
+		{"positive: batch", "/updates/", `[{"id":"someMetric","type":"counter","delta":10}]`, http.StatusOK},
+		{"positive: gauge", "/update/", `{"id":"someMetric","type":"gauge","value":1.23}`, http.StatusOK},
+		{"positive: counter", "/update/", `{"id":"someMetric","type":"counter","delta":123}`, http.StatusOK},
 	}
 
 	for _, tt := range testsContentTypeJSON {
@@ -109,6 +110,7 @@ func TestHandlersWithBadStorage(t *testing.T) {
 		{"bad storage: default", "/", http.MethodGet, http.StatusInternalServerError},
 		{"bad storage: counter value", "/value/counter/someMetric", http.MethodGet, http.StatusNotFound},
 		{"bad storage: gauge value", "/value/gauge/someMetric", http.MethodGet, http.StatusNotFound},
+		{"bad storage: update batch", "/updates/", "Other:json", http.StatusInternalServerError},
 	}
 
 	for _, tt := range tests {
@@ -130,6 +132,15 @@ func TestHandlersWithBadStorage(t *testing.T) {
 				client := &http.Client{}
 				resp, err := client.Do(req)
 				defer resp.Body.Close()
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedStatusCode, resp.StatusCode)
+
+			case "Other:json":
+				req, err := http.NewRequestWithContext(context.Background(), "POST", ts.URL+tt.url, bytes.NewReader([]byte(`[{"id":"someMetric","type":"counter","delta":10}]`)))
+				assert.NoError(t, err)
+				req.Header.Set("Content-Type", "application/json")
+				client := &http.Client{}
+				resp, err := client.Do(req)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedStatusCode, resp.StatusCode)
 			}

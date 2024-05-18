@@ -120,4 +120,19 @@ MCgCIQCutWIayEFNWgO9VNZvwG90C9V265aREwnfqIXprcYmHwIDAQAB
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 		defer resp.Body.Close()
 	})
+
+	t.Run("error reading body to decrypt", func(t *testing.T) {
+		privatePEM := `-----BEGIN RSA PRIVATE KEY-----
+MCQCAQACAwDZhwIDAQABAgIIAQICAOkCAgDvAgIAwQICAJECASc=
+-----END RSA PRIVATE KEY-----`
+		block, _ := pem.Decode([]byte(privatePEM))
+		privateKeyPEM, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+		app.PrivateKeyPEM = privateKeyPEM
+
+		r := httptest.NewRequest("POST", srv.URL, errReader(0))
+		r.RequestURI = ""
+
+		_, err := http.DefaultClient.Do(r)
+		assert.Error(t, err)
+	})
 }
