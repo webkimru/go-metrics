@@ -141,6 +141,7 @@ func TestHandlersWithBadStorage(t *testing.T) {
 				req.Header.Set("Content-Type", "application/json")
 				client := &http.Client{}
 				resp, err := client.Do(req)
+				defer resp.Body.Close()
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedStatusCode, resp.StatusCode)
 			}

@@ -132,7 +132,10 @@ MCQCAQACAwDZhwIDAQABAgIIAQICAOkCAgDvAgIAwQICAJECASc=
 		r := httptest.NewRequest("POST", srv.URL, errReader(0))
 		r.RequestURI = ""
 
-		_, err := http.DefaultClient.Do(r)
+		resp, err := http.DefaultClient.Do(r)
 		assert.Error(t, err)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
 	})
 }
