@@ -105,19 +105,10 @@ func TestHandlersWithBadStorage(t *testing.T) {
 		expectedStatusCode int
 	}{
 		{"bad storage: counter", "/update/counter/someMetric/123", http.MethodPost, http.StatusInternalServerError},
-		//{"positive test: gauge", "/update/gauge/someMetric/123", http.MethodPost, http.StatusOK},
 		{"bad storage: gauge", "/update/gauge/someMetric/123.123", http.MethodPost, http.StatusInternalServerError},
 		{"bad storage: default", "/", http.MethodGet, http.StatusInternalServerError},
 		{"bad storage: counter value", "/value/counter/someMetric", http.MethodGet, http.StatusNotFound},
 		{"bad storage: gauge value", "/value/gauge/someMetric", http.MethodGet, http.StatusNotFound},
-		//{"bad storage: post batch", "/updates/", http.MethodPost, http.StatusBadRequest},
-		//{"negative test: counter", "/update/counter/someMetric/123.123", http.MethodPost, http.StatusBadRequest},
-		//{"negative test: counter", "/update/counter/someMetric/none", http.MethodPost, http.StatusBadRequest},
-		//{"negative test: counter", "/update/counter/someMetric/none", http.MethodPost, http.StatusBadRequest},
-		//{"negative test: gauge", "/update/gauge/someMetric/none", http.MethodPost, http.StatusBadRequest},
-		//{"negative test: metric name", "/update/counter//123", http.MethodPost, http.StatusNotFound},
-		//{"nagative test: http method", "/update/counter/someMetric/123", http.MethodGet, http.StatusMethodNotAllowed},
-		//{"nagative test: wrong url", "/someurl/", http.MethodPost, http.StatusNotFound},
 	}
 
 	for _, tt := range tests {
