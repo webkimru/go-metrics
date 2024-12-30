@@ -9,6 +9,7 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/logger"
 	pb "github.com/webkimru/go-yandex-metrics/internal/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"net/http"
@@ -56,6 +57,7 @@ func main() {
 		gRPC = grpc.NewServer()
 		// регистрируем сервис
 		pb.RegisterMetricsServer(gRPC, mygrpc.Repo)
+		reflection.Register(gRPC)
 		// получаем запросы gRPC
 		fmt.Println("Starting gRPC server on port 3200")
 		if err = gRPC.Serve(listen); err != nil {

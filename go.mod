@@ -1,6 +1,6 @@
 module github.com/webkimru/go-yandex-metrics
 
-go 1.20
+go 1.22.7
 
 require (
 	github.com/fatih/errwrap v1.6.0
