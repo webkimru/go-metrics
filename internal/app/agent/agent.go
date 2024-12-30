@@ -8,6 +8,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/mailru/easyjson"
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -252,7 +253,7 @@ func SendThroughGRPC(ctx context.Context, requests []metrics.RequestMetric, c pb
 		return err
 	}
 	if resp.Error != "" {
-		return fmt.Errorf(resp.Error)
+		return errors.New(resp.Error)
 	}
 
 	return nil
