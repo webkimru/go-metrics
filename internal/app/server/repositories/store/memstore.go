@@ -33,11 +33,9 @@ func (ms *MemStorage) UpdateCounter(ctx context.Context, name string, value int6
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	if _, ok := ms.Counter[name]; ok {
-		ms.Counter[name] += Counter(value)
-		return int64(ms.Counter[name]), nil
-	}
-	return 0, nil
+	ms.Counter[name] += Counter(value)
+
+	return int64(ms.Counter[name]), nil
 }
 
 // UpdateGauge обновляет поле Gauge.
@@ -45,11 +43,9 @@ func (ms *MemStorage) UpdateGauge(ctx context.Context, name string, value float6
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	if _, ok := ms.Gauge[name]; ok {
-		ms.Gauge[name] = Gauge(value)
-		return float64(ms.Gauge[name]), nil
-	}
-	return 0.0, nil
+	ms.Gauge[name] = Gauge(value)
+
+	return float64(ms.Gauge[name]), nil
 }
 
 // GetCounter возращает значение счетчика Counter.
@@ -95,5 +91,8 @@ func (ms *MemStorage) UpdateBatchMetrics(ctx context.Context, metrics []models.M
 }
 
 func (ms *MemStorage) Initialize(ctx context.Context, _ config.AppConfig) error {
+	ms.Counter = make(map[string]Counter, 1)
+	ms.Gauge = make(map[string]Gauge, 31)
+
 	return nil
 }
