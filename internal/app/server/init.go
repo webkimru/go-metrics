@@ -132,7 +132,8 @@ func Setup(ctx context.Context) (*string, error) {
 	}
 	// обязательные настройки
 	if app.ServerAddress == "" {
-		return nil, fmt.Errorf("server address is not defined, it must be specified, for example, localhost:8080")
+		app.ServerAddress = "localhost:8080"
+		logger.Log.Infof("server address is set to the default address - localhost:8080")
 	}
 	if app.FileStore.FilePath == "" {
 		app.FileStore.FilePath = "/tmp/metrics-db.json" // silent default
