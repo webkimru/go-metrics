@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 var (
@@ -42,8 +43,12 @@ func main() {
 	}
 	// HTTP SERVER
 	srv := &http.Server{
-		Addr:    *serverAddress,
-		Handler: server.Routes(),
+		Addr:              *serverAddress,
+		Handler:           server.Routes(),
+		IdleTimeout:       5 * time.Second,
+		ReadTimeout:       1 * time.Second,
+		ReadHeaderTimeout: 500 * time.Millisecond,
+		WriteTimeout:      500 * time.Millisecond,
 	}
 	// gRPC Server
 	var gRPC *grpc.Server
