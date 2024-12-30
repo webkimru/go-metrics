@@ -117,7 +117,8 @@ func Setup() (string, int, error) {
 	}
 	// обязательные настройки
 	if app.ServerAddress == "" {
-		return "", 0, fmt.Errorf("destionation server address is not defined, it must be specified, for example, localhost:8080")
+		app.ServerAddress = "localhost:8080"
+		logger.Log.Infof("server address is set to the default address - localhost:8080")
 	}
 	if app.RateLimit == 0 {
 		app.RateLimit = 1 // silent default
