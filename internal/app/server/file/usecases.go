@@ -17,7 +17,7 @@ func SyncWriter(ctx context.Context, getAllMetrics func(ctx context.Context) (ma
 		return nil
 	}
 
-	// значение 0 делает запись синхронной
+	// значение 0 делает запись асинхронной
 	if app.FileStore.Interval > 0 {
 		return nil
 	}
