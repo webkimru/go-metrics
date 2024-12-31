@@ -193,7 +193,7 @@ func Setup(ctx context.Context) (*string, error) {
 		return nil, err
 	}
 	// загружать ранее сохранённые значения из указанного файла при старте сервера
-	if app.FileStore.Restore {
+	if app.FileStore.Restore && storePriority == config.Memory {
 		res, err := file.Reader()
 		if err != nil {
 			return nil, err
