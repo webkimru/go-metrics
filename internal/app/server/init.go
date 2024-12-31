@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/config"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/file"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/file/async"
@@ -16,9 +20,6 @@ import (
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store"
 	"github.com/webkimru/go-yandex-metrics/internal/app/server/repositories/store/pg"
 	"github.com/webkimru/go-yandex-metrics/internal/security"
-	"net/http"
-	"os"
-	"strconv"
 )
 
 var app config.AppConfig
@@ -186,21 +187,21 @@ func Setup(ctx context.Context) (*string, error) {
 	default: // in memory
 		storePriority = config.Memory
 		db = &store.MemStorage{}
-		// загружать ранее сохранённые значения из указанного файла при старте сервера
-		if app.FileStore.Restore {
-			res, err := file.Reader()
-			if err != nil {
-				return nil, err
-			}
-			// если не пустой файл
-			if res != nil {
-				db = &store.MemStorage{Counter: res.Counter, Gauge: res.Gauge}
-			}
-		}
 	}
 
 	if err = db.Initialize(ctx, app); err != nil {
 		return nil, err
+	}
+	// загружать ранее сохранённые значения из указанного файла при старте сервера
+	if app.FileStore.Restore {
+		res, err := file.Reader()
+		if err != nil {
+			return nil, err
+		}
+		// если не пустой файл
+		if res != nil {
+			db = &store.MemStorage{Counter: res.Counter, Gauge: res.Gauge}
+		}
 	}
 
 	// инициализируем репозиторий хендлеров с указанным вариантом хранения
