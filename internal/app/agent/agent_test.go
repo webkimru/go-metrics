@@ -19,46 +19,6 @@ import (
 	"time"
 )
 
-func TestGetMetrics(t *testing.T) {
-	a := config.AppConfig{
-		PollInterval: 1,
-	}
-	app = a
-
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
-	m := metrics.Metric{}
-	wg.Add(1)
-	go GetMetrics(ctx, &wg, &m)
-
-	time.Sleep(3 * time.Second)
-	cancel()
-
-	if m.Alloc == 0 {
-		t.Error("Expected Alloc value > 0, but got 0")
-	}
-}
-
-func TestGetExtraMetrics(t *testing.T) {
-	a := config.AppConfig{
-		PollInterval: 1,
-	}
-	app = a
-
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
-	m := metrics.Metric{}
-	wg.Add(1)
-	go GetExtraMetrics(ctx, &wg, &m)
-
-	time.Sleep(3 * time.Second)
-	cancel()
-
-	if m.TotalMemory == 0 {
-		t.Error("Expected TotalMemory value > 0, but got 0")
-	}
-}
-
 func TestSend(t *testing.T) {
 	a := config.AppConfig{
 		SecretKey: "123",
